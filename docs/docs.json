@@ -52,19 +52,29 @@
             "pages": ["index", "quickstart", "configuration"]
           },
           {
-            "group": "Features",
+            "group": "Creation Flow",
             "pages": [
-              "features/overview",
               "features/creation",
-              "features/editing",
+              "features/outline",
+              "features/descriptions",
+              "features/images"
+            ]
+          },
+          {
+            "group": "Materials & Export",
+            "pages": [
               "features/materials",
               "features/export",
               "features/import-export"
             ]
           },
           {
-            "group": "Support",
-            "pages": ["faq"]
+            "group": "More",
+            "pages": [
+              "history",
+              "features/overview",
+              "faq"
+            ]
           }
         ]
       }
