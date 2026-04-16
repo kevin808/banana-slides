@@ -1459,9 +1459,11 @@ def create_ppt_renovation_project():
         template_dir = project_dir / "template"
         template_dir.mkdir(parents=True, exist_ok=True)
 
-        # Save original file
-        safe_name = secure_filename(file.filename)
-        safe_name = secure_filename(file.filename)
+        # Save original file with a standardized name to avoid encoding issues
+        # (secure_filename strips non-ASCII chars, causing Chinese filenames like
+        # '演示文稿.pdf' to become 'pdf' with no extension, breaking PDF discovery)
+        original_ext = file.filename.rsplit('.', 1)[-1].lower()
+        safe_name = f'original.{original_ext}'
         original_path = template_dir / safe_name
         file.save(str(original_path))
 
