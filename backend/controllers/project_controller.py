@@ -1441,6 +1441,7 @@ def create_ppt_renovation_project():
 
         keep_layout = request.form.get('keep_layout', 'false').lower() == 'true'
         template_style = request.form.get('template_style', '').strip() or None
+        language = request.form.get('language', current_app.config.get('OUTPUT_LANGUAGE', 'zh'))
 
         # Create project
         project = Project(
@@ -1481,9 +1482,17 @@ def create_ppt_renovation_project():
                     raise ValueError("PDF conversion failed - output file not found")
                 logger.info(f"Converted PPTX to PDF: {pdf_path}")
             except subprocess.TimeoutExpired:
-                raise ValueError("PPTX to PDF conversion timed out")
+                raise ValueError(
+                    "PPTX 转 PDF 超时，请稍后重试或手动转为 PDF 后上传。"
+                    if language == 'zh' else
+                    "PPTX to PDF conversion timed out. Please retry or convert to PDF manually before uploading."
+                )
             except FileNotFoundError:
-                raise ValueError("PPTX conversion requires LibreOffice, which is not installed. Please convert your PPTX to PDF locally before uploading.")
+                raise ValueError(
+                    "PPTX 转换需要安装 LibreOffice，但当前环境未检测到。请在本地将 PPTX 转为 PDF 后再上传。"
+                    if language == 'zh' else
+                    "PPTX conversion requires LibreOffice, which is not installed. Please convert your PPTX to PDF locally before uploading."
+                )
 
         # Convert PDF to page images using PyMuPDF or pdf2image
         pages_dir = project_dir / "pages"
@@ -1610,7 +1619,6 @@ def create_ppt_renovation_project():
             lazyllm_image_caption_source=current_app.config.get('IMAGE_CAPTION_MODEL_SOURCE', 'doubao'),
         )
 
-        language = request.form.get('language', current_app.config.get('OUTPUT_LANGUAGE', 'zh'))
         app = current_app._get_current_object()
 
         # Submit async task
