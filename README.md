@@ -648,8 +648,8 @@ banana-slides/
 可自由用于个人学习、研究、试验、教育或非营利科研活动等非商业用途；
 <details> 
 <summary> 详情 </summary>
-需要商业许可证（Commercial License）（例如：希望闭源使用、私有化部署交付、将本项目集成进闭源产品，或在不公开对应源代码的前提下提供服务），请联系作者：anionex@qq.com
-- 联系方式：anionex@qq.com
+需要商业许可证（Commercial License）（例如：希望闭源使用、私有化部署交付、将本项目集成进闭源产品，或在不公开对应源代码的前提下提供服务），请联系作者：davidyang042@gmail.com
+- 联系方式：davidyang042@gmail.com
 </details>
 
 
@@ -697,7 +697,7 @@ banana-slides/
 
 感谢以下朋友对项目的无偿赞助支持：
 > @雅俗共赏、@曹峥、@以年观日、@John、@胡yun星Ethan, @azazo1、@刘聪NLP、@🍟、@苍何、@万瑾、@biubiu、@law、@方源、@寒松Falcon
-> 如对赞助列表有疑问，可<a href="mailto:anionex@qq.com">联系作者</a>
+> 如对赞助列表有疑问，可<a href="mailto:davidyang042@gmail.com">联系作者</a>
  
 ## 📈 项目统计
 
