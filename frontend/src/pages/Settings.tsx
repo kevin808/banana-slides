@@ -740,6 +740,7 @@ export const Settings: React.FC = () => {
 
       // isActive tracks whether this test round is still pending — avoids stale closure
       let isActive = true;
+      // eslint-disable-next-line prefer-const
       let pollInterval: ReturnType<typeof setInterval>;
       const finish = (nextState: ServiceTestState, toastMsg: string, toastType: 'success' | 'error') => {
         if (!isActive) return;
