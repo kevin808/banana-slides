@@ -6,6 +6,8 @@
   <img src="https://trendshift.io/api/badge/repositories/22056" alt="Anionex%2Fbanana-slides | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
 </a>
 <br>
+<a href="https://hellogithub.com/repository/Anionex/banana-slides" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=c8a0ee51918e4353af08012b8472b85e&claim_uid=CtDTm2jbUHhVGBr&theme=neutral" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+<br>
 
 <b>一个基于nano banana pro🍌的原生AI PPT生成应用<br></b>
 <b> 在几分钟内从想法到演示文稿，无需繁琐排版、口头提出修改，迈向真正的"Vibe PPT" </b>
