@@ -1190,6 +1190,38 @@ export const resetSettings = async (): Promise<ApiResponse<Settings>> => {
 };
 
 /**
+ * OpenAI OAuth: get authorization URL
+ */
+export const getOpenAIOAuthUrl = async (): Promise<ApiResponse<{ auth_url: string }>> => {
+  const response = await apiClient.get<ApiResponse<{ auth_url: string }>>('/api/settings/openai-oauth/authorize');
+  return response.data;
+};
+
+/**
+ * OpenAI OAuth: disconnect
+ */
+export const disconnectOpenAIOAuth = async (): Promise<ApiResponse<{ message: string }>> => {
+  const response = await apiClient.post<ApiResponse<{ message: string }>>('/api/settings/openai-oauth/disconnect');
+  return response.data;
+};
+
+/**
+ * OpenAI OAuth: get connection status
+ */
+export const getOpenAIOAuthStatus = async (): Promise<ApiResponse<{ connected: boolean; account_id: string | null }>> => {
+  const response = await apiClient.get<ApiResponse<{ connected: boolean; account_id: string | null }>>('/api/settings/openai-oauth/status');
+  return response.data;
+};
+
+/**
+ * OpenAI OAuth: list available models
+ */
+export const getOpenAIOAuthModels = async (): Promise<ApiResponse<{ models: string[] }>> => {
+  const response = await apiClient.get<ApiResponse<{ models: string[] }>>('/api/settings/openai-oauth/models');
+  return response.data;
+};
+
+/**
  * 验证 API key 是否可用
  */
 export const verifyApiKey = async (): Promise<ApiResponse<{ available: boolean; message: string }>> => {
