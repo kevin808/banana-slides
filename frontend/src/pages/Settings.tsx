@@ -42,6 +42,7 @@ const settingsI18n = {
         manualCallbackHint: "如果登录完成后页面显示连接失败，请复制浏览器地址栏中的完整地址粘贴到下方",
         manualCallbackPlaceholder: "粘贴回调地址...",
         manualCallbackSubmit: "提交",
+        manualCallbackCancel: "取消",
         manualCallbackSuccess: "连接成功",
       },
       quota: {
@@ -176,6 +177,7 @@ const settingsI18n = {
         manualCallbackHint: "If the page shows a connection error after login, copy the full URL from your browser's address bar and paste it below",
         manualCallbackPlaceholder: "Paste callback URL...",
         manualCallbackSubmit: "Submit",
+        manualCallbackCancel: "Cancel",
         manualCallbackSuccess: "Connected successfully",
       },
       quota: {
@@ -505,7 +507,6 @@ export const Settings: React.FC = () => {
         const checkClosed = setInterval(() => {
           if (popup?.closed) {
             clearInterval(checkClosed);
-            setOauthConnecting(false);
             window.removeEventListener('message', onMessage);
           }
         }, 1000);
@@ -1458,6 +1459,12 @@ export const Settings: React.FC = () => {
                           className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"
                         >
                           {t('settings.openaiOAuth.manualCallbackSubmit')}
+                        </button>
+                        <button
+                          onClick={() => { setOauthConnecting(false); setManualCallbackUrl(''); }}
+                          className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-foreground-secondary border border-gray-300 dark:border-border-primary rounded-md hover:bg-gray-100 dark:hover:bg-background-tertiary transition-colors"
+                        >
+                          {t('settings.openaiOAuth.manualCallbackCancel')}
                         </button>
                       </div>
                     </div>
