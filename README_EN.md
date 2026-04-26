@@ -139,6 +139,9 @@ No longer restricted by complex menus and buttons, issue modification commands d
 
 ## 🔥 Recent Updates
 
+- [2026-04-25]: Material Toolbox — added whole-image editing, region editing (overlay/replace), and smart erase modes on top of the existing material generation, all accessible from a unified entry point
+- [2026-04-25]: OpenAI account connection via official OAuth — log in with your OpenAI account and use Codex as a text/image generation provider without manually entering API keys (uses OpenAI's official OAuth PKCE flow, not reverse-engineered)
+- [2026-04-25]: Custom text style templates — save named, color-coded style description templates for persistent reuse across projects
 - [2026-04-23]: Added support for the gpt-image-2 model. Editable background export quality has also been improved due to model upgrades (Select **Generative** in **Settings - Export Options - Background Acquisition**).
 - [2026-04-11]: Added support for [CLI operations and integrated agent skills](https://docs.bananaslides.online/cli)
 - [2026-03]: Added several features and optimizations, such as extra fields, multi-aspect ratio settings, etc.
