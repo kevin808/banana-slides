@@ -1064,7 +1064,7 @@ export const Settings: React.FC = () => {
     // lazyllm openai vendor is handled separately
 
     return (
-      <div key={item.modelKey} className="p-4 bg-gray-50 dark:bg-background-primary border border-gray-200 dark:border-border-primary rounded-lg space-y-3">
+      <div key={item.modelKey} className="pb-6 border-b border-gray-200 dark:border-border-primary last:border-b-0 last:pb-0 space-y-3">
         {/* 模型名称 */}
         <Input
           label={item.label}
@@ -1183,7 +1183,7 @@ export const Settings: React.FC = () => {
             <span className="ml-2">{t('settings.sections.apiConfig')}</span>
           </h2>
           <p className="text-sm text-gray-500 dark:text-foreground-tertiary mb-4">{t('settings.sections.apiConfigDesc')}</p>
-          <div className="p-4 bg-gray-50 dark:bg-background-primary border border-gray-200 dark:border-border-primary rounded-lg space-y-3">
+          <div className="space-y-3">
             {/* 提供商下拉 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-foreground-secondary mb-2">
@@ -1242,7 +1242,7 @@ export const Settings: React.FC = () => {
           </div>
 
           {/* AIHubmix 提示 */}
-          <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
+          <div className="mt-3 pl-4 border-l-4 border-blue-300 dark:border-blue-600">
             <p className="text-sm text-gray-700 dark:text-foreground-secondary">
               {t('settings.apiKeyTip.before')}
               <a href={['https://', 'aihubmix', '.com/?', 'aff=17EC'].join('')} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline font-medium">AIHubmix 申请 API key</a>
@@ -1250,7 +1250,7 @@ export const Settings: React.FC = () => {
           </div>
 
           {/* API Key 获取指南 */}
-          <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
+          <div className="mt-2 pl-4 border-l-4 border-blue-300 dark:border-blue-600">
             <p className="text-sm font-medium text-gray-800 dark:text-foreground-primary flex items-center gap-1.5 mb-2">
               <HelpCircle size={15} className="text-blue-500" />
               {t('settings.apiKeyHelp.title')}
@@ -1346,11 +1346,11 @@ export const Settings: React.FC = () => {
         </div>
 
         {/* 高级设置（折叠区域） */}
-        <div className="border border-gray-200 dark:border-border-primary rounded-lg">
+        <div className="border-t border-gray-200 dark:border-border-primary pt-2">
           <button
             type="button"
             onClick={() => setAdvancedOpen(!advancedOpen)}
-            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-background-hover rounded-lg transition-colors"
+            className="w-full flex items-center justify-between px-0 py-3 text-left hover:opacity-80 transition-opacity"
           >
             <span className="text-lg font-semibold text-gray-900 dark:text-foreground-primary">
               {t('settings.sections.advancedSettings')}
@@ -1361,7 +1361,7 @@ export const Settings: React.FC = () => {
             />
           </button>
           {advancedOpen && (
-            <div className="px-4 pb-4 space-y-8">
+            <div className="pb-4 space-y-8">
               {/* OpenAI OAuth 连接区块 */}
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-foreground-primary mb-1 flex items-center">
@@ -1369,7 +1369,7 @@ export const Settings: React.FC = () => {
                   <span className="ml-2">{t('settings.openaiOAuth.title')}</span>
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-foreground-tertiary mb-4">{t('settings.openaiOAuth.description')}</p>
-                <div className="p-4 bg-gray-50 dark:bg-background-primary border border-gray-200 dark:border-border-primary rounded-lg">
+                <div className="p-4 border border-gray-200 dark:border-border-primary rounded-lg">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className={`w-2.5 h-2.5 rounded-full ${settings?.openai_oauth_connected ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
@@ -1436,7 +1436,7 @@ export const Settings: React.FC = () => {
           <p className="text-sm text-gray-500 dark:text-foreground-tertiary">
             {t('settings.serviceTest.description')}
           </p>
-          <div className="p-3 bg-yellow-50 dark:bg-background-primary border border-yellow-200 dark:border-yellow-700 rounded-lg">
+          <div className="pl-4 border-l-4 border-yellow-300 dark:border-yellow-600">
             <p className="text-sm text-gray-700 dark:text-foreground-secondary">
               💡 {t('settings.serviceTest.tip')}
             </p>
@@ -1497,7 +1497,7 @@ export const Settings: React.FC = () => {
               return (
                 <div
                   key={item.key}
-                  className="p-4 bg-gray-50 dark:bg-background-primary border border-gray-200 dark:border-border-primary rounded-lg space-y-2"
+                  className="py-4 border-b border-gray-200 dark:border-border-primary last:border-b-0 space-y-2"
                 >
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>

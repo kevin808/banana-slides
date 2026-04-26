@@ -209,7 +209,7 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
                 </div>
 
                 {/* 画面比例 */}
-                <div className="bg-gray-50 dark:bg-background-primary rounded-lg p-6 space-y-4">
+                <div className="space-y-4">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <h4 className="text-base font-semibold text-gray-900 dark:text-foreground-primary">{t('projectSettings.aspectRatio')}</h4>
