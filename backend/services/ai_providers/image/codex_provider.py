@@ -54,9 +54,9 @@ class CodexImageProvider(ImageProvider):
             "Content-Type": "application/json",
         }
 
-    def _build_payload(self, prompt: str, aspect_ratio: str, ref_images: Optional[List[Image.Image]] = None, quality: str = "high") -> dict:
+    def _build_payload(self, prompt: str, aspect_ratio: str, ref_images: Optional[List[Image.Image]] = None, quality: str = "high", resolution: Optional[str] = None) -> dict:
         """Build a Responses API request with image_generation tool."""
-        size = _compute_gpt_image_size(aspect_ratio, self.resolution)
+        size = _compute_gpt_image_size(aspect_ratio, resolution or self.resolution)
 
         content = []
         if ref_images:
@@ -101,17 +101,12 @@ class CodexImageProvider(ImageProvider):
         enable_thinking: bool = False,
         thinking_budget: int = 0,
     ) -> Optional[Image.Image]:
-        """Generate an image via the Codex Responses API.
-
-        ref_images, resolution, enable_thinking, thinking_budget are accepted
-        for interface compatibility but ignored — the Codex image_generation
-        tool does not support these features.
-        """
+        """Generate an image via the Codex Responses API."""
         try:
-            payload = self._build_payload(prompt, aspect_ratio, ref_images=ref_images)
+            payload = self._build_payload(prompt, aspect_ratio, ref_images=ref_images, resolution=resolution)
             logger.debug(
-                "Codex image request: image_model=%s, aspect=%s, ref_images=%d",
-                self.image_model, aspect_ratio, len(ref_images) if ref_images else 0,
+                "Codex image request: image_model=%s, aspect=%s, resolution=%s, ref_images=%d",
+                self.image_model, aspect_ratio, resolution, len(ref_images) if ref_images else 0,
             )
 
             resp = http_requests.post(
