@@ -39,6 +39,11 @@ const settingsI18n = {
         selectModel: "选择模型...",
         loadingModels: "正在加载可用模型...",
         connectFirst: "请先连接 OpenAI 账号",
+        manualCallbackLabel: "登录后连接失败？",
+        manualCallbackHint: "请复制弹窗浏览器地址栏中的完整地址，粘贴到下方即可完成连接",
+        manualCallbackPlaceholder: "粘贴回调地址...",
+        manualCallbackSubmit: "提交",
+        manualCallbackSuccess: "连接成功",
       },
       quota: {
         title: "免费图片额度",
@@ -169,6 +174,11 @@ const settingsI18n = {
         selectModel: "Select a model...",
         loadingModels: "Loading available models...",
         connectFirst: "Please connect your OpenAI account first",
+        manualCallbackLabel: "Connection failed after login?",
+        manualCallbackHint: "Copy the full URL from the popup's address bar and paste it below to complete the connection",
+        manualCallbackPlaceholder: "Paste callback URL...",
+        manualCallbackSubmit: "Submit",
+        manualCallbackSuccess: "Connected successfully",
       },
       quota: {
         title: "Free Image Quota",
@@ -465,6 +475,9 @@ export const Settings: React.FC = () => {
   const [formData, setFormData] = useState(initialFormData);
   const [serviceTestStates, setServiceTestStates] = useState<Record<string, ServiceTestState>>({});
   const [oauthConnecting, setOauthConnecting] = useState(false);
+  const [manualCallbackUrl, setManualCallbackUrl] = useState('');
+  const [manualCallbackOpen, setManualCallbackOpen] = useState(false);
+  const [manualCallbackSubmitting, setManualCallbackSubmitting] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const handleOAuthLogin = async () => {
@@ -519,6 +532,33 @@ export const Settings: React.FC = () => {
       }
     } catch {
       show({ message: t('settings.openaiOAuth.disconnectFailed'), type: 'error' });
+    }
+  };
+
+  const handleManualCallback = async () => {
+    if (!manualCallbackUrl.trim()) return;
+    setManualCallbackSubmitting(true);
+    try {
+      const resp = await api.submitOAuthManualCallback(manualCallbackUrl.trim());
+      if (resp.success) {
+        setManualCallbackUrl('');
+        setManualCallbackOpen(false);
+        const statusResp = await api.getOpenAIOAuthStatus();
+        if (statusResp.success && statusResp.data) {
+          setSettings(prev => prev ? {
+            ...prev,
+            openai_oauth_connected: statusResp.data!.connected,
+            openai_oauth_account_id: statusResp.data!.account_id || undefined,
+          } : prev);
+        }
+        show({ message: t('settings.openaiOAuth.manualCallbackSuccess'), type: 'success' });
+      } else {
+        show({ message: t('settings.openaiOAuth.connectFailed'), type: 'error' });
+      }
+    } catch {
+      show({ message: t('settings.openaiOAuth.connectFailed'), type: 'error' });
+    } finally {
+      setManualCallbackSubmitting(false);
     }
   };
 
@@ -1404,6 +1444,37 @@ export const Settings: React.FC = () => {
                     </div>
                   </div>
                   <p className="mt-3 text-xs text-gray-500 dark:text-foreground-tertiary">{t('settings.openaiOAuth.hint')}</p>
+                  {!settings?.openai_oauth_connected && (
+                    <div className="mt-3">
+                      <button
+                        onClick={() => setManualCallbackOpen(v => !v)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        {t('settings.openaiOAuth.manualCallbackLabel')}
+                      </button>
+                      {manualCallbackOpen && (
+                        <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                          <p className="text-xs text-amber-700 dark:text-amber-300 mb-2">{t('settings.openaiOAuth.manualCallbackHint')}</p>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={manualCallbackUrl}
+                              onChange={(e) => setManualCallbackUrl(e.target.value)}
+                              placeholder={t('settings.openaiOAuth.manualCallbackPlaceholder')}
+                              className="flex-1 px-3 py-1.5 text-xs border border-gray-300 dark:border-border-primary rounded-md bg-white dark:bg-background-secondary text-gray-900 dark:text-foreground-primary placeholder-gray-400"
+                            />
+                            <button
+                              onClick={handleManualCallback}
+                              disabled={manualCallbackSubmitting || !manualCallbackUrl.trim()}
+                              className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"
+                            >
+                              {t('settings.openaiOAuth.manualCallbackSubmit')}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
