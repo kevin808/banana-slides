@@ -124,6 +124,13 @@ No longer limited by complex menu buttons, issue editing commands directly throu
 - For related updates, see https://github.com/Anionex/banana-slides/issues/121
 <img width="1000"  alt="image" src="https://github.com/user-attachments/assets/a85d2d48-1966-4800-a4bf-73d17f914062" />
 
+### 6. TTS Narration Video Export
+- **One-click conversion of slides into narrated videos (MP4) with AI-generated voiceover and subtitles**
+- AI automatically converts page descriptions into natural spoken narration via edge-tts
+- Supports Chinese, English, and Japanese with multiple voice options (Xiaoxiao, Yunxi, Jenny, Guy, etc.)
+- Sentence-by-sentence scrolling subtitles, synchronized with speech rhythm, with CJK font rendering support
+- Optional Ken Burns animation effect (zoom/pan) for richer visual presentation
+
 <br>
 
 **🌟 Comparison with notebooklm slide deck**
@@ -132,7 +139,7 @@ No longer limited by complex menu buttons, issue editing commands directly throu
 | Page Limit | 15 pages | **Unlimited** | 
 | Secondary Editing | Prompt-based modification | **Selection editing + Natural language editing** |
 | Asset Addition | Cannot add after generation | **Add freely after generation** |
-| Export Formats | Supports exporting to PDF, (non-editable image) pptx | **Export to PDF, (image or editable) pptx** |
+| Export Formats | Supports exporting to PDF, (non-editable image) pptx | **Export to PDF, (image or editable) pptx, narration video** |
 | Watermark | Watermark in free version | **No watermark, freely add/remove elements** |
 
 > Note: The comparison may become outdated as new features are added.
@@ -180,6 +187,7 @@ No longer limited by complex menu buttons, issue editing commands directly throu
 | 🔄 In Progress | Support editable .pptx export with multi-layering and precise background removal |
 | 🔄 In Progress | Web search |
 | 🔄 In Progress | Agent mode |
+| ✅ Completed | TTS narration video export (Chinese/English/Japanese, multiple voices, subtitles, Ken Burns effect) |
 | 🚍 Partial | Optimize frontend loading speed |
 | 🧭 Planned | Online playback feature |
 | 🧭 Planned | Simple animations and slide transition effects |
