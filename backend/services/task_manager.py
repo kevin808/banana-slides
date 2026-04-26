@@ -10,7 +10,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Callable, List, Dict, Any, Optional
 from datetime import datetime
 from math import gcd
+import time
 from sqlalchemy import func
+from sqlalchemy.exc import OperationalError
 from PIL import Image, ImageDraw, ImageFilter
 from models import db, Task, Page, Material, PageImageVersion
 from utils import get_filtered_pages
@@ -158,12 +160,26 @@ def save_image_with_version(image, project_id: str, page_id: str, file_service,
         page_obj.status = 'COMPLETED'
         page_obj.updated_at = datetime.utcnow()
 
-    # 提交事务
-    db.session.commit()
+    _commit_with_retry()
 
     logger.debug(f"Page {page_id} image saved as version {next_version}: {image_path}, cached: {cached_image_path}")
 
     return image_path, next_version
+
+
+def _commit_with_retry(max_retries=5, base_delay=0.5):
+    for attempt in range(max_retries):
+        try:
+            db.session.commit()
+            return
+        except OperationalError as e:
+            if "database is locked" in str(e) and attempt < max_retries - 1:
+                db.session.rollback()
+                delay = base_delay * (2 ** attempt)
+                logger.warning(f"Database locked, retrying commit in {delay:.1f}s (attempt {attempt + 1}/{max_retries})")
+                time.sleep(delay)
+            else:
+                raise
 
 
 SUPPORTED_IMAGE_ASPECT_RATIOS = (
