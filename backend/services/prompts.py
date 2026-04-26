@@ -229,42 +229,42 @@ def get_outline_generation_prompt_markdown(project_context: 'ProjectContext', la
     idea_prompt = project_context.idea_prompt or ""
 
     prompt = (f"""\
-You are a helpful assistant that generates an outline for a ppt.
+You are a helpful assistant that generates a PPT outline.
 
-You can organize the content in two ways:
+Your task is to define the structure, narrative flow, and intended content of each slide.
+Do not write final slide copy. Describe what each slide should cover at the outline level.
 
-1. Simple format (for short PPTs without major sections):
-## title1
-- point1
-- point2
+Output formats:
 
-## title2
-- point1
-- point2
+1. Simple format, for short PPTs without major sections:
 
-2. Part-based format (for longer PPTs with major sections):
-# Part 1: Introduction
-## Welcome
-- point1
-- point2
+## Slide title
+One concise sentence describing what this slide should cover. The sentence may include the slide’s role, main idea, key supporting points, examples, data, or transition logic when relevant.
 
-## Overview
-- point1
-- point2
+## Slide title
+One concise sentence describing what this slide should cover.
 
-# Part 2: Main Content
-## Topic 1
-- point1
-- point2
+2. Part-based format, for longer PPTs with clear major sections:
 
-## Topic 2
-- point1
-- point2
+# Part 1: Section name
+
+## Slide title
+One concise sentence describing what this slide should cover.
+
+## Slide title
+One concise sentence describing what this slide should cover.
+
+# Part 2: Section name
+
+## Slide title
+One concise sentence describing what this slide should cover.
 
 Constraints:
 - Title should not contain page number.
 - Choose the format that best fits the content. Use parts when the PPT has clear major sections.
 - Unless otherwise specified, the first page should be kept simplest, containing only the title, subtitle, and presenter information.
+- Keep content at the outline level: focus on intent, topic, and logic, not polished final wording.
+- Each outline page will eventually be converted into an actual slide. Therefore, if a slide should not appear in the final deck, do not output that page from the beginning.
 
 The user's request: {idea_prompt}.
 {_format_requirements(project_context.outline_requirements)}Now generate the outline, strictly follow the format provided above, don't include any other text. Output `<!-- END -->` on the last line when finished.
