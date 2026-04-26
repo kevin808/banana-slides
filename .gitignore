@@ -38,6 +38,7 @@
 !skills/**/*.md
 # !docs/**/*.md
 !docs/specs/cli-spec.md
+!docs/superpowers/specs/*.md
 !.github/**/*.md
 *.pyc
 .env
