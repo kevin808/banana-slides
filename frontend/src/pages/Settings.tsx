@@ -487,9 +487,9 @@ export const Settings: React.FC = () => {
         const popup = window.open(resp.data.auth_url, 'openai-oauth', 'width=600,height=700');
         const onMessage = async (event: MessageEvent) => {
           if (event.data?.type === 'openai-oauth-callback') {
-            window.removeEventListener('message', onMessage);
-            setOauthConnecting(false);
             if (event.data.success) {
+              window.removeEventListener('message', onMessage);
+              setOauthConnecting(false);
               const statusResp = await api.getOpenAIOAuthStatus();
               if (statusResp.success && statusResp.data) {
                 setSettings(prev => prev ? {
@@ -498,8 +498,6 @@ export const Settings: React.FC = () => {
                   openai_oauth_account_id: statusResp.data!.account_id || undefined,
                 } : prev);
               }
-            } else {
-              show({ message: t('settings.openaiOAuth.connectFailed'), type: 'error' });
             }
           }
         };
