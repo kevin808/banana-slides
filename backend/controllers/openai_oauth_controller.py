@@ -188,7 +188,7 @@ def _exchange_and_store(code: str, state: str, app=None) -> dict:
 
     Returns {"success": True, "account_id": ...} or {"success": False, "message": ...}.
     """
-    flow = _pending_flows.pop(state, None)
+    flow = _pending_flows.get(state)
     if not flow:
         return {"success": False, "message": "Unknown state — please retry"}
 
@@ -220,14 +220,19 @@ def _exchange_and_store(code: str, state: str, app=None) -> dict:
     expires_in = data.get("expires_in", 3600)
     account_id = _extract_account_id(data.get("id_token"))
 
-    with app.app_context():
-        settings = Settings.get_settings()
-        settings.openai_oauth_access_token = access_token
-        settings.openai_oauth_refresh_token = refresh_token
-        settings.openai_oauth_expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
-        settings.openai_oauth_account_id = account_id
-        db.session.commit()
+    try:
+        with app.app_context():
+            settings = Settings.get_settings()
+            settings.openai_oauth_access_token = access_token
+            settings.openai_oauth_refresh_token = refresh_token
+            settings.openai_oauth_expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
+            settings.openai_oauth_account_id = account_id
+            db.session.commit()
+    except Exception as e:
+        logger.error("Failed to store OAuth tokens: %s", e)
+        return {"success": False, "message": "Failed to store tokens"}
 
+    _pending_flows.pop(state, None)
     logger.info("OpenAI OAuth connected for account: %s", account_id)
     return {"success": True, "account_id": account_id}
 
@@ -313,17 +318,19 @@ def _build_callback_html(success: bool, message: str) -> str:
     status_text = "Connected" if success else f"Error: {safe_message}"
     color = "#22c55e" if success else "#ef4444"
     json_message = json.dumps(message)
+    close_script = "setTimeout(function(){ window.close(); }, 2000);" if success else ""
+    hint = "" if success else "<p style='margin-top:1rem;font-size:0.85rem;color:#666'>Please copy the full URL from the address bar and paste it into the manual input on the Settings page.</p>"
     return f"""<!DOCTYPE html>
 <html><head><title>OpenAI OAuth</title></head>
 <body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0">
 <div style="text-align:center">
 <p style="font-size:1.5rem;color:{color}">{status_text}</p>
-<p>This window will close automatically.</p>
+{"<p>This window will close automatically.</p>" if success else ""}{hint}
 </div>
 <script>
 if (window.opener) {{
     window.opener.postMessage({{type:'openai-oauth-callback',success:{str(success).lower()},message:{json_message}}}, '*');
 }}
-setTimeout(function(){{ window.close(); }}, 2000);
+{close_script}
 </script>
 </body></html>"""
