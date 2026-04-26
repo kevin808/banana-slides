@@ -5,7 +5,6 @@ import {
   FolderOpen,
   Image as ImageIcon,
   ImagePlus,
-  Info,
   Layers,
   Maximize2,
   Minimize2,
@@ -677,20 +676,13 @@ export const MaterialGeneratorModal: React.FC<MaterialGeneratorModalProps> = ({
         </button>
       )}
     >
-      <div className="mb-5 pl-4 border-l-4 border-banana-300 dark:border-banana-600">
-        <p className="text-sm text-gray-700 dark:text-foreground-secondary flex items-center gap-2">
-          <Info size={16} className="flex-shrink-0 text-banana-600 dark:text-banana-400" />
-          {t('material.saveToLibraryNote')}
-        </p>
-      </div>
-
       <div className={`grid gap-6 ${isFullscreen ? 'xl:grid-cols-[360px_minmax(0,1fr)]' : 'lg:grid-cols-[320px_minmax(0,1fr)]'}`}>
         <aside className="space-y-5 lg:pr-6 lg:border-r lg:border-gray-200 dark:lg:border-border-primary">
-          <section className="space-y-3">
+          <section className="space-y-2">
             <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('material.toolModeLabel')}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
+            <div className="grid grid-cols-2 gap-1.5">
               {TOOL_CARDS.map((tool) => (
                 <button
                   key={tool.value}
@@ -699,20 +691,18 @@ export const MaterialGeneratorModal: React.FC<MaterialGeneratorModalProps> = ({
                     setToolMode(tool.value);
                     if (isCompleted) setIsCompleted(false);
                   }}
-                  className={`group rounded-lg border px-3 py-3 text-left transition-all ${
+                  title={t(tool.descKey)}
+                  className={`rounded-lg border px-2.5 py-2 text-left transition-all ${
                     toolMode === tool.value
                       ? 'border-banana-500 bg-banana-50 dark:bg-background-secondary shadow-sm'
                       : 'border-gray-200 dark:border-border-primary bg-white dark:bg-background-secondary hover:border-gray-300 dark:hover:border-gray-500'
                   }`}
                 >
-                  <div className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-foreground-primary">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-800 dark:text-foreground-primary">
                     <span className={toolMode === tool.value ? 'text-banana-600 dark:text-banana' : 'text-gray-400 dark:text-foreground-tertiary'}>
                       {tool.icon}
                     </span>
                     {t(tool.labelKey)}
-                  </div>
-                  <div className="mt-1 text-xs leading-5 text-gray-500 dark:text-foreground-tertiary">
-                    {t(tool.descKey)}
                   </div>
                 </button>
               ))}
@@ -799,10 +789,10 @@ export const MaterialGeneratorModal: React.FC<MaterialGeneratorModalProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-[112px_minmax(0,1fr)] gap-3">
-              <div className="space-y-2">
-                <div className="text-xs text-gray-600 dark:text-gray-400 font-medium">{t('material.mainReference')}</div>
-                <div className="w-28 h-28 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-banana-400 dark:hover:border-banana-500 hover:bg-banana-50/60 dark:hover:bg-background-hover transition-all bg-white dark:bg-background-secondary relative group">
+            <div className="flex flex-wrap gap-2 items-start">
+              <div className="space-y-1.5">
+                <div className="text-xs text-gray-500 dark:text-gray-400">{t('material.mainReference')}</div>
+                <div className="w-20 h-20 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-banana-400 dark:hover:border-banana-500 hover:bg-banana-50/60 dark:hover:bg-background-hover transition-all bg-white dark:bg-background-secondary relative group">
                   {refImage ? (
                     <>
                       <img
@@ -817,23 +807,21 @@ export const MaterialGeneratorModal: React.FC<MaterialGeneratorModalProps> = ({
                           e.stopPropagation();
                           setRefImage(null);
                         }}
-                        className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-sm z-10"
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-sm z-10"
                       >
-                        <X size={14} strokeWidth={2.5} />
+                        <X size={10} strokeWidth={2.5} />
                       </button>
                     </>
                   ) : (
-                    <>
-                      <ImageIcon size={26} className="text-gray-400 dark:text-gray-500 mb-1.5" />
-                      <button
-                        data-testid="material-ref-trigger"
-                        type="button"
-                        onClick={() => refInputRef.current?.click()}
-                        className="text-xs text-gray-600 dark:text-gray-400 font-medium"
-                      >
-                        {t('material.clickToUpload')}
-                      </button>
-                    </>
+                    <button
+                      data-testid="material-ref-trigger"
+                      type="button"
+                      onClick={() => refInputRef.current?.click()}
+                      className="flex flex-col items-center gap-1"
+                    >
+                      <ImageIcon size={20} className="text-gray-400 dark:text-gray-500" />
+                      <span className="text-[10px] text-gray-500 dark:text-gray-400">{t('material.clickToUpload')}</span>
+                    </button>
                   )}
                   <input
                     ref={refInputRef}
@@ -846,21 +834,21 @@ export const MaterialGeneratorModal: React.FC<MaterialGeneratorModalProps> = ({
                 </div>
               </div>
 
-              <div className="min-w-0 space-y-2">
-                <div className="text-xs text-gray-600 dark:text-gray-400 font-medium">{t('material.extraReference')}</div>
+              <div className="min-w-0 space-y-1.5">
+                <div className="text-xs text-gray-500 dark:text-gray-400">{t('material.extraReference')}</div>
                 <div className="flex flex-wrap gap-2">
                   {extraImages.map((file, idx) => (
                     <div key={`${file.name}-${idx}`} className="relative group">
                       <img
                         src={extraImageUrls[idx] || ''}
                         alt={`extra-${idx + 1}`}
-                        className="w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-border-primary shadow-sm"
+                        className="w-14 h-14 object-cover rounded-lg border border-gray-200 dark:border-border-primary shadow-sm"
                       />
                       <button
                         onClick={() => removeExtraImage(idx)}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-sm"
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-sm"
                       >
-                        <X size={12} strokeWidth={2.5} />
+                        <X size={10} strokeWidth={2.5} />
                       </button>
                     </div>
                   ))}
@@ -868,10 +856,9 @@ export const MaterialGeneratorModal: React.FC<MaterialGeneratorModalProps> = ({
                     data-testid="material-extra-trigger"
                     type="button"
                     onClick={() => extraInputRef.current?.click()}
-                    className="w-16 h-16 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-banana-400 dark:hover:border-banana-500 hover:bg-banana-50/60 dark:hover:bg-background-hover transition-all bg-white dark:bg-background-secondary group"
+                    className="w-14 h-14 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-banana-400 dark:hover:border-banana-500 hover:bg-banana-50/60 dark:hover:bg-background-hover transition-all bg-white dark:bg-background-secondary"
                   >
-                    <Upload size={18} className="text-gray-400 dark:text-gray-500 mb-1" />
-                    <span className="text-[10px] text-gray-600 dark:text-gray-400 font-medium">{t('common.add')}</span>
+                    <Upload size={14} className="text-gray-400 dark:text-gray-500" />
                   </button>
                   <input
                     ref={extraInputRef}
@@ -902,20 +889,15 @@ export const MaterialGeneratorModal: React.FC<MaterialGeneratorModalProps> = ({
           </div>
         </aside>
 
-        <section className="min-w-0 space-y-4">
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            <div className="rounded-lg border border-gray-200 dark:border-border-primary bg-white dark:bg-background-secondary p-4">
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div className="min-w-0">
-                  <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                    <Layers size={16} className="text-banana-600 dark:text-banana-400" />
-                    {t('material.sourceImage')}
-                  </h4>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-5">
-                    {t('material.sourceImageHint')}
-                  </p>
-                </div>
-                <div className="flex flex-shrink-0 gap-2">
+        <section className="min-w-0 flex flex-col">
+          <div className="grid grid-cols-2 gap-4 flex-1">
+            <div className="rounded-lg border border-gray-200 dark:border-border-primary bg-white dark:bg-background-secondary p-4 flex flex-col">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                  <Layers size={16} className="text-banana-600 dark:text-banana-400" />
+                  {t('material.sourceImage')}
+                </h4>
+                <div className="flex flex-shrink-0 gap-1.5">
                   <Button variant="ghost" size="sm" icon={<FolderOpen size={16} />} onClick={() => handleOpenMaterialSelector('source')} />
                   <Button
                     data-testid="material-source-trigger"
@@ -937,8 +919,7 @@ export const MaterialGeneratorModal: React.FC<MaterialGeneratorModalProps> = ({
 
               <div
                 data-testid="material-source-canvas"
-                className="relative rounded-lg overflow-hidden border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/40"
-                style={{ aspectRatio: selectionEnabled ? '4 / 3' : '16 / 10' }}
+                className="relative rounded-lg overflow-hidden border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/40 flex-1 min-h-[200px]"
                 onMouseDown={handleSelectionMouseDown}
                 onMouseMove={handleSelectionMouseMove}
                 onMouseUp={handleSelectionMouseUp}
@@ -1003,39 +984,35 @@ export const MaterialGeneratorModal: React.FC<MaterialGeneratorModalProps> = ({
               )}
             </div>
 
-            <div className="rounded-lg border border-gray-200 dark:border-border-primary bg-white dark:bg-background-secondary p-4">
-              <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="rounded-lg border border-gray-200 dark:border-border-primary bg-white dark:bg-background-secondary p-4 flex flex-col">
+              <div className="flex items-center justify-between gap-3 mb-3">
                 <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                   <Sparkles size={16} className="text-banana-600 dark:text-banana-400" />
                   {t('material.generatedResult')}
                 </h4>
-                <div className="flex flex-wrap justify-end gap-2">
-                  {previewUrl && (
-                    <>
-                      <Button variant="ghost" size="sm" onClick={handleUseResultAsSource}>
-                        {t('material.useResultAsSource')}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setPreviewUrl(null);
-                          setIsCompleted(false);
-                          persistRunState({ previewUrl: null, status: 'idle', taskId: null });
-                        }}
-                      >
-                        {t('material.clearResult')}
-                      </Button>
-                    </>
-                  )}
-                </div>
+                {previewUrl && (
+                  <div className="flex flex-shrink-0 gap-1.5">
+                    <Button variant="ghost" size="sm" onClick={handleUseResultAsSource} icon={<Layers size={16} />} title={t('material.useResultAsSource')} />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={<X size={16} />}
+                      title={t('material.clearResult')}
+                      onClick={() => {
+                        setPreviewUrl(null);
+                        setIsCompleted(false);
+                        persistRunState({ previewUrl: null, status: 'idle', taskId: null });
+                      }}
+                    />
+                  </div>
+                )}
               </div>
               {isGenerating ? (
-                <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-border-primary shadow-inner" style={{ aspectRatio: '4 / 3' }}>
+                <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-border-primary shadow-inner flex-1 min-h-[200px]">
                   <Skeleton className="w-full h-full" />
                 </div>
               ) : previewUrl ? (
-                <div className="bg-white dark:bg-gray-900/50 rounded-lg overflow-hidden border border-gray-200 dark:border-border-primary flex items-center justify-center shadow-inner" style={{ aspectRatio: '4 / 3' }}>
+                <div className="bg-white dark:bg-gray-900/50 rounded-lg overflow-hidden border border-gray-200 dark:border-border-primary flex items-center justify-center shadow-inner flex-1 min-h-[200px]">
                   <img
                     src={previewUrl}
                     alt={t('material.generatedResult')}
@@ -1043,7 +1020,7 @@ export const MaterialGeneratorModal: React.FC<MaterialGeneratorModalProps> = ({
                   />
                 </div>
               ) : (
-                <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 text-sm border border-dashed border-gray-300 dark:border-gray-600" style={{ aspectRatio: '4 / 3' }}>
+                <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 text-sm border border-dashed border-gray-300 dark:border-gray-600 flex-1 min-h-[200px]">
                   <ImageIcon size={48} className="mb-3 opacity-50" />
                   <div className="font-medium">{t('material.generatedPreview')}</div>
                 </div>
@@ -1052,6 +1029,10 @@ export const MaterialGeneratorModal: React.FC<MaterialGeneratorModalProps> = ({
           </div>
         </section>
       </div>
+
+      <p className="mt-4 text-xs text-gray-400 dark:text-gray-500 text-center">
+        {t('material.saveToLibraryNote')}
+      </p>
 
       <MaterialSelector
         projectId={projectId || undefined}
