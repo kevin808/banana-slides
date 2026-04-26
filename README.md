@@ -227,6 +227,10 @@ cp .env.example .env
 ```
 
 **（可选， 也可以启动后在用户界面配置）** 编辑 `.env` 文件，配置必要的环境变量：
+
+<details>
+<summary>点击展开详情</summary>
+  
 > **项目中大模型接口以AIHubMix平台格式为标准，推荐使用 [AIHubMix(点击此处可直接访问)](https://aihubmix.com/?aff=17EC) 获取API密钥，减小迁移成本**<br>
 > **友情提示：谷歌nano banana pro模型接口费用较高，请注意调用成本**
 ```env
@@ -265,6 +269,9 @@ SENSENOVA_API_KEY=your-sensenova-api-key      # 商汤日日新
 MINIMAX_API_KEY=your-minimax-api-key          # MiniMax
 ...
 ```
+  
+</details>
+
 
 **使用新版可编辑导出配置方法，获得更好的可编辑导出效果**: 需在[百度智能云平台](https://console.bce.baidu.com/iam/#/iam/apikey/list)（点击此处进入）中获取API KEY，填写在.env文件中的BAIDU_API_KEY字段（有充足的免费使用额度）。详见https://github.com/Anionex/banana-slides/issues/121 中的说明
 
@@ -485,119 +492,14 @@ npm run dev
 - **框架**：React 18 + TypeScript
 - **构建工具**：Vite 5
 - **状态管理**：Zustand
-- **路由**：React Router v6
-- **UI组件**：Tailwind CSS
-- **拖拽功能**：@dnd-kit
-- **图标**：Lucide React
-- **HTTP客户端**：Axios
 
 ### 后端技术栈
 - **语言**：Python 3.10+
 - **框架**：Flask 3.0
 - **包管理**：uv
 - **数据库**：SQLite + Flask-SQLAlchemy
-- **AI能力**：Google Gemini API
-- **PPT处理**：python-pptx
-- **图片处理**：Pillow
-- **并发处理**：ThreadPoolExecutor
-- **跨域支持**：Flask-CORS
 
-## 📁 项目结构
 
-```
-banana-slides/
-├── frontend/                    # React前端应用
-│   ├── src/
-│   │   ├── pages/              # 页面组件
-│   │   │   ├── Home.tsx        # 首页（创建项目）
-│   │   │   ├── OutlineEditor.tsx    # 大纲编辑页
-│   │   │   ├── DetailEditor.tsx     # 详细描述编辑页
-│   │   │   ├── SlidePreview.tsx     # 幻灯片预览页
-│   │   │   └── History.tsx          # 历史版本管理页
-│   │   ├── components/         # UI组件
-│   │   │   ├── outline/        # 大纲相关组件
-│   │   │   │   └── OutlineCard.tsx
-│   │   │   ├── preview/        # 预览相关组件
-│   │   │   │   ├── SlideCard.tsx
-│   │   │   │   └── DescriptionCard.tsx
-│   │   │   ├── shared/         # 共享组件
-│   │   │   │   ├── Button.tsx
-│   │   │   │   ├── Card.tsx
-│   │   │   │   ├── Input.tsx
-│   │   │   │   ├── Textarea.tsx
-│   │   │   │   ├── Modal.tsx
-│   │   │   │   ├── Loading.tsx
-│   │   │   │   ├── Toast.tsx
-│   │   │   │   ├── Markdown.tsx
-│   │   │   │   ├── MaterialSelector.tsx
-│   │   │   │   ├── MaterialGeneratorModal.tsx
-│   │   │   │   ├── TemplateSelector.tsx
-│   │   │   │   ├── ReferenceFileSelector.tsx
-│   │   │   │   └── ...
-│   │   │   ├── layout/         # 布局组件
-│   │   │   └── history/        # 历史版本组件
-│   │   ├── store/              # Zustand状态管理
-│   │   │   └── useProjectStore.ts
-│   │   ├── api/                # API接口
-│   │   │   ├── client.ts       # Axios客户端配置
-│   │   │   └── endpoints.ts    # API端点定义
-│   │   ├── types/              # TypeScript类型定义
-│   │   ├── utils/              # 工具函数
-│   │   ├── constants/          # 常量定义
-│   │   └── styles/             # 样式文件
-│   ├── public/                 # 静态资源
-│   ├── package.json
-│   ├── vite.config.ts
-│   ├── tailwind.config.js      # Tailwind CSS配置
-│   ├── Dockerfile
-│   └── nginx.conf              # Nginx配置
-│
-├── backend/                    # Flask后端应用
-│   ├── app.py                  # Flask应用入口
-│   ├── config.py               # 配置文件
-│   ├── models/                 # 数据库模型
-│   │   ├── project.py          # Project模型
-│   │   ├── page.py             # Page模型（幻灯片页）
-│   │   ├── task.py             # Task模型（异步任务）
-│   │   ├── material.py         # Material模型（参考素材）
-│   │   ├── user_template.py    # UserTemplate模型（用户模板）
-│   │   ├── reference_file.py   # ReferenceFile模型（参考文件）
-│   │   ├── page_image_version.py # PageImageVersion模型（页面版本）
-│   ├── services/               # 服务层
-│   │   ├── ai_service.py       # AI生成服务（Gemini集成）
-│   │   ├── file_service.py     # 文件管理服务
-│   │   ├── file_parser_service.py # 文件解析服务
-│   │   ├── export_service.py   # PPTX/PDF导出服务
-│   │   ├── task_manager.py     # 异步任务管理
-│   │   ├── prompts.py          # AI提示词模板
-│   ├── controllers/            # API控制器
-│   │   ├── project_controller.py      # 项目管理
-│   │   ├── page_controller.py         # 页面管理
-│   │   ├── material_controller.py     # 素材管理
-│   │   ├── template_controller.py     # 模板管理
-│   │   ├── reference_file_controller.py # 参考文件管理
-│   │   ├── export_controller.py       # 导出功能
-│   │   └── file_controller.py         # 文件上传
-│   ├── utils/                  # 工具函数
-│   │   ├── response.py         # 统一响应格式
-│   │   ├── validators.py       # 数据验证
-│   │   └── path_utils.py       # 路径处理
-│   ├── instance/               # SQLite数据库（自动生成）
-│   ├── exports/                # 导出文件目录
-│   ├── Dockerfile
-│   └── README.md
-│
-├── tests/                      # 测试文件目录
-├── v0_demo/                    # 早期演示版本
-├── output/                     # 输出文件目录
-│
-├── pyproject.toml              # Python项目配置（uv管理）
-├── uv.lock                     # uv依赖锁定文件
-├── docker-compose.yml          # Docker Compose配置
-├── .env.example                 # 环境变量示例
-├── LICENSE                     # 许可证
-└── README.md                   # 本文件
-```
 
 ## 交流群
 为了方便大家沟通互助，建此微信交流群.
@@ -607,14 +509,6 @@ banana-slides/
 
 
 <img width="302" alt="image" src="https://github.com/user-attachments/assets/e5ccc7ac-3944-4d29-8a49-638401683888" />
-
-
-
-
-
-
-
-
 
 
 
