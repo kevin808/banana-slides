@@ -3,33 +3,25 @@
 <p>
   <img src="https://github.com/user-attachments/assets/81fe6816-44cc-4c61-97c7-f3c099650966" alt="Banana Slides" width="860">
 </p>
-
-<p>
-  <a href="#-项目缘起"><b>简体中文</b></a>
-  &nbsp;|&nbsp;
-  <a href="https://docs.bananaslides.online/"><b>Documentation</b></a>
-  &nbsp;|&nbsp;
-  <a href="README_EN.md"><b>English</b></a>
-</p>
-
-<br>
-
 <p>
   <a href="https://trendshift.io/repositories/22056" target="_blank">
     <img src="https://trendshift.io/api/badge/repositories/22056" alt="Anionex%2Fbanana-slides | Trendshift" width="360" height="79">
   </a>
-  <br>
   <a href="https://hellogithub.com/repository/Anionex/banana-slides" target="_blank">
     <img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=c8a0ee51918e4353af08012b8472b85e&claim_uid=CtDTm2jbUHhVGBr&theme=neutral" alt="Featured｜HelloGitHub" width="360" height="78">
   </a>
 </p>
-
+<br>
 <p>
   <a href="https://bananaslides.online/"><b>🚀 在线 Demo</b></a>
   &nbsp;•&nbsp;
-  <a href="https://docs.bananaslides.online/"><b>📚 文档</b></a>
+  <a href="https://docs.bananaslides.online/"><b>📖 文档</b></a>
+  &nbsp;•&nbsp;
+  <a href="#-项目缘起"><b>简体中文</b></a>
+  &nbsp;•&nbsp;
+  <a href="README_EN.md"><b>English</b></a>
 </p>
-
+<br>
 <p>
   <a href="https://github.com/Anionex/banana-slides/stargazers"><img src="https://img.shields.io/github/stars/Anionex/banana-slides?style=flat-square&color=FFD700" alt="GitHub Stars"></a>
   <a href="https://github.com/Anionex/banana-slides/network"><img src="https://img.shields.io/github/forks/Anionex/banana-slides?style=flat-square&color=FFD700" alt="GitHub Forks"></a>
