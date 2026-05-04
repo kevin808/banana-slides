@@ -19,6 +19,10 @@ from werkzeug.utils import secure_filename
 from models import db, Project, Page, Task, ReferenceFile
 from services import ProjectContext, FileService
 from services.ai_service_manager import get_ai_service
+from services.image_quota_service import (
+    build_image_generation_quota_message,
+    check_image_generation_quota,
+)
 from services.task_manager import (
     task_manager,
     generate_descriptions_task,
@@ -27,7 +31,7 @@ from services.task_manager import (
 )
 from utils import (
     success_response, error_response, not_found, bad_request,
-    parse_page_ids_from_body, get_filtered_pages
+    parse_page_ids_from_body, get_filtered_pages, rate_limit_error
 )
 from utils.device_utils import get_device_id, require_device_id
 
@@ -1069,6 +1073,12 @@ def generate_images(project_id):
         
         if not pages:
             return bad_request("No pages found for project")
+
+        quota_ok, snapshot = check_image_generation_quota(len(pages))
+        if not quota_ok:
+            return rate_limit_error(
+                build_image_generation_quota_message(len(pages), snapshot)
+            )
         
         # 检查是否有模板图片或风格描述
         from services import FileService

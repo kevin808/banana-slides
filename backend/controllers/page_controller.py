@@ -4,9 +4,13 @@ Page Controller - handles page-related endpoints
 import logging
 from flask import Blueprint, request, current_app
 from models import db, Project, Page, PageImageVersion, Task
-from utils import success_response, error_response, not_found, bad_request
+from utils import success_response, error_response, not_found, bad_request, rate_limit_error
 from services import FileService, ProjectContext
 from services.ai_service_manager import get_ai_service
+from services.image_quota_service import (
+    build_image_generation_quota_message,
+    check_image_generation_quota,
+)
 from services.task_manager import task_manager, generate_single_page_image_task, edit_page_image_task
 from datetime import datetime
 from pathlib import Path
@@ -350,6 +354,12 @@ def generate_page_image(project_id, page_id):
         # Check if already generated
         if page.generated_image_path and not force_regenerate:
             return bad_request("Image already exists. Set force_regenerate=true to regenerate")
+
+        quota_ok, snapshot = check_image_generation_quota(1)
+        if not quota_ok:
+            return rate_limit_error(
+                build_image_generation_quota_message(1, snapshot)
+            )
         
         # Get description content
         desc_content = page.get_description_content()
@@ -527,6 +537,12 @@ def edit_page_image(project_id, page_id):
         
         if not page.generated_image_path:
             return bad_request("Page must have generated image first")
+
+        quota_ok, snapshot = check_image_generation_quota(1)
+        if not quota_ok:
+            return rate_limit_error(
+                build_image_generation_quota_message(1, snapshot)
+            )
         
         project = Project.query.get(project_id)
         if not project:

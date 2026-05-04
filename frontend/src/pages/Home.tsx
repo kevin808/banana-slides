@@ -5,13 +5,14 @@ import { Sparkles, FileText, FileEdit, ImagePlus, Paperclip, Palette, Lightbulb,
 import { Button, Card, useToast, MaterialGeneratorModal, MaterialCenterModal, ReferenceFileList, ReferenceFileSelector, FilePreviewModal, HelpModal, Footer, GithubRepoCard, TextStyleSelector } from '@/components/shared';
 import { MarkdownTextarea, type MarkdownTextareaRef } from '@/components/shared/MarkdownTextarea';
 import { TemplateSelector, getTemplateFile } from '@/components/shared/TemplateSelector';
-import { listUserTemplates, type UserTemplate, uploadReferenceFile, type ReferenceFile, associateFileToProject, triggerFileParse, associateMaterialsToProject, createPptRenovationProject } from '@/api/endpoints';
+import { listUserTemplates, type UserTemplate, uploadReferenceFile, type ReferenceFile, associateFileToProject, triggerFileParse, associateMaterialsToProject, createPptRenovationProject, getImageQuota } from '@/api/endpoints';
 import { useProjectStore } from '@/store/useProjectStore';
 import { devLog } from '@/utils/logger';
 import { useTheme } from '@/hooks/useTheme';
 import { useImagePaste } from '@/hooks/useImagePaste';
 import { useT } from '@/hooks/useT';
 import { ASPECT_RATIO_OPTIONS } from '@/config/aspectRatio';
+import type { ImageQuota } from '@/types';
 
 type CreationType = 'idea' | 'outline' | 'description' | 'ppt_renovation';
 
@@ -30,6 +31,13 @@ const homeI18n = {
       title: '蕉幻',
       subtitle: 'Vibe your slides like vibe coding',
       tagline: '基于 nano banana pro🍌 的原生 AI PPT 生成器',
+      quota: {
+        title: '当前免费图片额度',
+        used: '已用',
+        remaining: '剩余',
+        limit: '总上限',
+        unlimited: '不限制',
+      },
       features: {
         oneClick: '一句话生成 PPT',
         naturalEdit: '自然语言修改',
@@ -106,6 +114,13 @@ const homeI18n = {
       title: 'Banana Slides',
       subtitle: 'Vibe your slides like vibe coding',
       tagline: 'AI-native PPT generator powered by nano banana pro🍌',
+      quota: {
+        title: 'Current Free Image Quota',
+        used: 'Used',
+        remaining: 'Remaining',
+        limit: 'Limit',
+        unlimited: 'Unlimited',
+      },
       features: {
         oneClick: 'One-click PPT generation',
         naturalEdit: 'Natural language editing',
@@ -194,6 +209,7 @@ export const Home: React.FC = () => {
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [isFileSelectorOpen, setIsFileSelectorOpen] = useState(false);
   const [previewFileId, setPreviewFileId] = useState<string | null>(null);
+  const [imageQuota, setImageQuota] = useState<ImageQuota | null>(null);
 
   const [useTemplateStyle, setUseTemplateStyle] = useState(false);
   const [templateStyle, setTemplateStyle] = useState('');
@@ -234,6 +250,21 @@ export const Home: React.FC = () => {
       }
     };
     loadTemplates();
+  }, []);
+
+  useEffect(() => {
+    const loadImageQuota = async () => {
+      try {
+        const response = await getImageQuota();
+        if (response.data) {
+          setImageQuota(response.data);
+        }
+      } catch (error) {
+        console.error('加载首页图片额度失败:', error);
+      }
+    };
+
+    loadImageQuota();
   }, []);
 
   const handleOpenMaterialModal = () => {
@@ -825,6 +856,37 @@ export const Home: React.FC = () => {
                 {feature.label}
               </span>
             ))}
+          </div>
+
+          <div className="max-w-2xl mx-auto pt-4">
+            <div className="rounded-2xl border border-amber-200/80 dark:border-amber-700/60 bg-white/85 dark:bg-background-secondary px-4 py-4 md:px-5 backdrop-blur-sm shadow-lg dark:shadow-none">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div className="text-sm md:text-base font-semibold text-gray-900 dark:text-foreground-primary">
+                  {t('home.quota.title')}
+                </div>
+                <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_18px_rgba(16,185,129,0.45)]" />
+              </div>
+              <div className="grid grid-cols-3 gap-2 md:gap-3 text-left">
+                <div className="rounded-xl bg-amber-50/70 dark:bg-background-tertiary border border-amber-100 dark:border-border-primary px-3 py-3">
+                  <div className="text-xs text-gray-500 dark:text-foreground-tertiary">{t('home.quota.used')}</div>
+                  <div className="mt-1 text-xl md:text-2xl font-bold text-gray-900 dark:text-foreground-primary">
+                    {imageQuota?.used ?? '--'}
+                  </div>
+                </div>
+                <div className="rounded-xl bg-emerald-50/80 dark:bg-background-tertiary border border-emerald-100 dark:border-border-primary px-3 py-3">
+                  <div className="text-xs text-gray-500 dark:text-foreground-tertiary">{t('home.quota.remaining')}</div>
+                  <div className="mt-1 text-xl md:text-2xl font-bold text-emerald-600">
+                    {imageQuota?.remaining ?? '--'}
+                  </div>
+                </div>
+                <div className="rounded-xl bg-white/80 dark:bg-background-tertiary border border-gray-200 dark:border-border-primary px-3 py-3">
+                  <div className="text-xs text-gray-500 dark:text-foreground-tertiary">{t('home.quota.limit')}</div>
+                  <div className="mt-1 text-xl md:text-2xl font-bold text-gray-900 dark:text-foreground-primary">
+                    {imageQuota?.limit ?? t('home.quota.unlimited')}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

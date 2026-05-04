@@ -5,6 +5,7 @@ import os
 import sys
 import hmac
 import logging
+from fnmatch import fnmatch
 from pathlib import Path
 from dotenv import load_dotenv
 from sqlalchemy import event
@@ -26,6 +27,33 @@ from controllers.material_controller import material_bp, material_global_bp
 from controllers.reference_file_controller import reference_file_bp
 from controllers.settings_controller import settings_bp
 from controllers import project_bp, page_bp, template_bp, user_template_bp, export_bp, file_bp, style_bp
+
+
+def _get_request_host() -> str:
+    """Return current request host without port."""
+    from flask import request
+
+    forwarded_host = request.headers.get('X-Forwarded-Host', '')
+    host = forwarded_host or request.host or ''
+    return host.split(':', 1)[0].strip().lower()
+
+
+def _get_access_code_bypass_hosts() -> list[str]:
+    """Parse comma-separated host allowlist for access-code bypass."""
+    raw_hosts = os.getenv('ACCESS_CODE_BYPASS_HOSTS', '')
+    return [host.strip().lower() for host in raw_hosts.split(',') if host.strip()]
+
+
+def _is_access_code_bypassed() -> bool:
+    """Whether current request host is allowed to bypass access code."""
+    host = _get_request_host()
+    if not host:
+        return False
+
+    for pattern in _get_access_code_bypass_hosts():
+        if fnmatch(host, pattern):
+            return True
+    return False
 
 
 # Enable SQLite WAL mode for all connections
@@ -124,6 +152,8 @@ def create_app():
         expected = os.getenv('ACCESS_CODE', '').strip()
         if not expected:
             return  # not enabled
+        if _is_access_code_bypassed():
+            return  # trusted host bypass
         if not request.path.startswith('/api/'):
             return  # non-API routes (health, static, etc.)
         if request.path.startswith('/api/access-code/'):
@@ -142,7 +172,7 @@ def create_app():
     @app.route('/api/access-code/check', methods=['GET'])
     def check_access_code():
         """Check if access code protection is enabled"""
-        enabled = bool(os.getenv('ACCESS_CODE', '').strip())
+        enabled = bool(os.getenv('ACCESS_CODE', '').strip()) and not _is_access_code_bypassed()
         return {'data': {'enabled': enabled}}
 
     @app.route('/api/access-code/verify', methods=['POST'])
@@ -150,6 +180,8 @@ def create_app():
         """Verify the provided access code"""
         from flask import request, jsonify
         expected = os.getenv('ACCESS_CODE', '').strip()
+        if _is_access_code_bypassed():
+            return {'data': {'valid': True}}
         if not expected:
             return {'data': {'valid': True}}
         code = (request.json or {}).get('code', '')

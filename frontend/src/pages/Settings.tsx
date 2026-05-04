@@ -17,7 +17,17 @@ const settingsI18n = {
         performanceConfig: "性能配置", outputLanguage: "输出语言设置",
         textReasoning: "文本推理模式", imageReasoning: "图像推理模式",
         baiduOcr: "百度配置", serviceTest: "服务测试", lazyllmConfig: "LazyLLM 厂商配置",
+        imageQuota: "免费图片额度",
         vendorApiKeys: "厂商 API Key 配置"
+      },
+      quota: {
+        title: "免费图片额度",
+        desc: "全站免费图片生成总额度，包含页面生成、单页重生、图片编辑和素材生成。",
+        used: "已用",
+        remaining: "剩余",
+        limit: "总上限",
+        reserved: "预留中",
+        unlimited: "不限制",
       },
       theme: { label: "主题模式", light: "浅色", dark: "深色", system: "跟随系统" },
       language: { label: "界面语言", zh: "中文", en: "English" },
@@ -117,7 +127,17 @@ const settingsI18n = {
         performanceConfig: "Performance Configuration", outputLanguage: "Output Language Settings",
         textReasoning: "Text Reasoning Mode", imageReasoning: "Image Reasoning Mode",
         baiduOcr: "Baidu Configuration", serviceTest: "Service Test", lazyllmConfig: "LazyLLM Provider Configuration",
+        imageQuota: "Free Image Quota",
         vendorApiKeys: "Vendor API Key Configuration"
+      },
+      quota: {
+        title: "Free Image Quota",
+        desc: "Site-wide free image generation quota, including page generation, single-page regeneration, image editing, and material generation.",
+        used: "Used",
+        remaining: "Remaining",
+        limit: "Limit",
+        reserved: "Reserved",
+        unlimited: "Unlimited",
       },
       theme: { label: "Theme", light: "Light", dark: "Dark", system: "System" },
       language: { label: "Interface Language", zh: "中文", en: "English" },
@@ -210,7 +230,7 @@ import { Button, Input, Card, Loading, useToast, useConfirm } from '@/components
 import * as api from '@/api/endpoints';
 import type { OutputLanguage } from '@/api/endpoints';
 import { OUTPUT_LANGUAGE_OPTIONS } from '@/api/endpoints';
-import type { Settings as SettingsType } from '@/types';
+import type { Settings as SettingsType, ImageQuota } from '@/types';
 
 // 配置项类型定义
 type FieldType = 'text' | 'password' | 'number' | 'select' | 'buttons' | 'switch';
@@ -398,6 +418,7 @@ export const Settings: React.FC = () => {
   };
 
   const [settings, setSettings] = useState<SettingsType | null>(null);
+  const [imageQuota, setImageQuota] = useState<ImageQuota | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
@@ -546,11 +567,17 @@ export const Settings: React.FC = () => {
   const loadSettings = async () => {
     setIsLoading(true);
     try {
-      const response = await api.getSettings();
-      if (response.data) {
-        setSettings(response.data);
-        setFormData(formDataFromSettings(response.data));
-        sessionStorage.setItem('banana-settings', JSON.stringify(response.data));
+      const [settingsResponse, quotaResponse] = await Promise.all([
+        api.getSettings(),
+        api.getImageQuota(),
+      ]);
+      if (settingsResponse.data) {
+        setSettings(settingsResponse.data);
+        setFormData(formDataFromSettings(settingsResponse.data));
+        sessionStorage.setItem('banana-settings', JSON.stringify(settingsResponse.data));
+      }
+      if (quotaResponse.data) {
+        setImageQuota(quotaResponse.data);
       }
     } catch (error: any) {
       console.error('加载设置失败:', error);
@@ -1143,6 +1170,38 @@ export const Settings: React.FC = () => {
               <li>{t('settings.apiKeyHelp.step3')}</li>
               <li>{t('settings.apiKeyHelp.step4')}</li>
             </ol>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-foreground-primary mb-4 flex items-center">
+            <Image size={20} />
+            <span className="ml-2">{t('settings.sections.imageQuota')}</span>
+          </h2>
+          <div className="rounded-2xl border border-amber-200 dark:border-amber-700 bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/30 dark:to-background-primary p-5">
+            <p className="text-sm text-gray-600 dark:text-foreground-tertiary mb-4">
+              {t('settings.quota.desc')}
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="rounded-xl bg-white/80 dark:bg-background-secondary p-4 border border-gray-200 dark:border-border-primary">
+                <div className="text-xs text-gray-500 dark:text-foreground-tertiary">{t('settings.quota.used')}</div>
+                <div className="mt-1 text-2xl font-bold text-gray-900 dark:text-foreground-primary">{imageQuota?.used ?? '--'}</div>
+              </div>
+              <div className="rounded-xl bg-white/80 dark:bg-background-secondary p-4 border border-gray-200 dark:border-border-primary">
+                <div className="text-xs text-gray-500 dark:text-foreground-tertiary">{t('settings.quota.remaining')}</div>
+                <div className="mt-1 text-2xl font-bold text-emerald-600">{imageQuota?.remaining ?? '--'}</div>
+              </div>
+              <div className="rounded-xl bg-white/80 dark:bg-background-secondary p-4 border border-gray-200 dark:border-border-primary">
+                <div className="text-xs text-gray-500 dark:text-foreground-tertiary">{t('settings.quota.limit')}</div>
+                <div className="mt-1 text-2xl font-bold text-gray-900 dark:text-foreground-primary">
+                  {imageQuota?.limit ?? t('settings.quota.unlimited')}
+                </div>
+              </div>
+              <div className="rounded-xl bg-white/80 dark:bg-background-secondary p-4 border border-gray-200 dark:border-border-primary">
+                <div className="text-xs text-gray-500 dark:text-foreground-tertiary">{t('settings.quota.reserved')}</div>
+                <div className="mt-1 text-2xl font-bold text-amber-600">{imageQuota?.reserved ?? '--'}</div>
+              </div>
+            </div>
           </div>
         </div>
 

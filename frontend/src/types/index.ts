@@ -168,3 +168,10 @@ export interface Settings {
   updated_at?: string;
 }
 
+export interface ImageQuota {
+  limit: number | null;
+  completed: number;
+  reserved: number;
+  used: number;
+  remaining: number | null;
+}

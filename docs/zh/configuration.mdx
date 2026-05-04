@@ -99,6 +99,27 @@ BAIDU_API_KEY=your-baidu-api-key
 
 从百度智能云[申请 IAM API Key](https://console.bce.baidu.com/iam/#/iam/apikey/list)。
 
+## 访问口令与免密 Host
+
+如需为站点启用访问口令：
+
+```env
+ACCESS_CODE=your-access-code
+```
+
+如需对特定域名放行口令校验，可配置：
+
+```env
+ACCESS_CODE_BYPASS_HOSTS=openclaw-nopass.pptmagic.tech
+```
+
+说明：
+
+- 多个 Host 用英文逗号分隔。
+- 支持通配符，例如 `*.internal.pptmagic.tech`。
+- 命中白名单的 Host 会跳过 `/api/*` 的访问口令校验。
+- `/api/access-code/check` 在白名单 Host 下会返回无需口令，前端不会再弹密码框。
+
 ## 运行时设置覆盖
 
 以上所有配置也可通过网页设置页面进行配置。通过设置页面配置的参数会存储在数据库中，优先级高于 `.env`。点击"还原默认设置"可恢复为 `.env` 中的值。

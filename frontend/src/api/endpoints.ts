@@ -1,6 +1,6 @@
 import { apiClient } from './client';
 import type { Project, Task, ApiResponse, CreateProjectRequest, Page } from '@/types';
-import type { Settings } from '../types/index';
+import type { Settings, ImageQuota } from '../types/index';
 
 // ===== 访问口令 API =====
 
@@ -1043,6 +1043,11 @@ export const getStoredOutputLanguage = async (): Promise<OutputLanguage> => {
  */
 export const getSettings = async (): Promise<ApiResponse<Settings>> => {
   const response = await apiClient.get<ApiResponse<Settings>>('/api/settings');
+  return response.data;
+};
+
+export const getImageQuota = async (): Promise<ApiResponse<ImageQuota>> => {
+  const response = await apiClient.get<ApiResponse<ImageQuota>>('/api/settings/image-quota');
   return response.data;
 };
 

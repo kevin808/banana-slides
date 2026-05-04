@@ -14,6 +14,7 @@ from models import db, Settings, Task
 from utils import success_response, error_response, bad_request
 from config import Config, PROJECT_ROOT
 from services.ai_service import AIService
+from services.image_quota_service import get_image_generation_usage_snapshot
 from services.file_parser_service import FileParserService
 from services.ai_providers.ocr.baidu_accurate_ocr_provider import create_baidu_accurate_ocr_provider
 from services.ai_providers.image.baidu_inpainting_provider import create_baidu_inpainting_provider
@@ -160,6 +161,22 @@ def get_settings():
         return error_response(
             "GET_SETTINGS_ERROR",
             f"Failed to get settings: {str(e)}",
+            500,
+        )
+
+
+@settings_bp.route("/image-quota", methods=["GET"], strict_slashes=False)
+def get_image_quota():
+    """
+    GET /api/settings/image-quota - Get image quota snapshot
+    """
+    try:
+        return success_response(get_image_generation_usage_snapshot())
+    except Exception as e:
+        logger.error(f"Error getting image quota: {str(e)}")
+        return error_response(
+            "GET_IMAGE_QUOTA_ERROR",
+            f"Failed to get image quota: {str(e)}",
             500,
         )
 

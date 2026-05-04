@@ -97,6 +97,27 @@ For enhanced editable PPTX export with OCR-based text extraction, apply for an [
 BAIDU_API_KEY=your-baidu-api-key
 ```
 
+## Access Code And Bypass Hosts
+
+To protect the site with an access code:
+
+```env
+ACCESS_CODE=your-access-code
+```
+
+To bypass access-code checks for specific hosts:
+
+```env
+ACCESS_CODE_BYPASS_HOSTS=openclaw-nopass.pptmagic.tech
+```
+
+Notes:
+
+- Separate multiple hosts with commas.
+- Wildcards are supported, for example `*.internal.pptmagic.tech`.
+- Matching hosts skip access-code enforcement for `/api/*`.
+- On bypass hosts, `/api/access-code/check` reports that no access code is required, so the frontend will not show the password prompt.
+
 ## Runtime Settings Override
 
 All of the above can also be configured via the web UI's Settings page. Settings configured there are stored in the database and override `.env` values. Use "Reset to Default" in Settings to revert to `.env` values.

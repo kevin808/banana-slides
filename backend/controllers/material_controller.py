@@ -3,9 +3,13 @@ Material Controller - handles standalone material image generation
 """
 from flask import Blueprint, request, current_app, send_file
 from models import db, Project, Material, Task
-from utils import success_response, error_response, not_found, bad_request
+from utils import success_response, error_response, not_found, bad_request, rate_limit_error
 from services import FileService
 from services.ai_service_manager import get_ai_service
+from services.image_quota_service import (
+    build_image_generation_quota_message,
+    check_image_generation_quota,
+)
 from services.task_manager import task_manager, generate_material_image_task
 from pathlib import Path
 from werkzeug.utils import secure_filename
@@ -268,6 +272,12 @@ def generate_material_image(project_id):
 
         if not prompt:
             return bad_request("prompt is required")
+
+        quota_ok, snapshot = check_image_generation_quota(1)
+        if not quota_ok:
+            return rate_limit_error(
+                build_image_generation_quota_message(1, snapshot)
+            )
 
         # 处理project_id：对于全局素材，使用'global'作为Task的project_id
         # Task模型要求project_id不能为null，但Material可以
@@ -560,4 +570,3 @@ def download_materials_zip():
         tmp.close()
         current_app.logger.exception("Failed to build materials zip")
         return error_response('SERVER_ERROR', 'Failed to create zip archive', 500)
-

@@ -81,6 +81,7 @@ class Config:
     # 并发配置
     MAX_DESCRIPTION_WORKERS = int(os.getenv('MAX_DESCRIPTION_WORKERS', '5'))
     MAX_IMAGE_WORKERS = int(os.getenv('MAX_IMAGE_WORKERS', '8'))
+    MAX_FREE_GENERATED_IMAGES = int(os.getenv('MAX_FREE_GENERATED_IMAGES', '1000'))
     
     # 图片生成配置
     DEFAULT_ASPECT_RATIO = "16:9"
