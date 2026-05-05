@@ -7,9 +7,9 @@ ARG PYPI_INDEX_URL=
 # 安装 uv（使用中间阶段避免 COPY --from 的变量展开问题）
 FROM ${GHCR_REGISTRY}astral-sh/uv:latest AS uv
 
-# 使用 Python 3.10 作为基础镜像
+# 使用 Python 3.12 作为基础镜像，与当前锁文件中的二进制依赖保持一致
 # 如果指定了 DOCKER_REGISTRY，使用镜像源；否则使用官方源
-FROM ${DOCKER_REGISTRY:-}python:3.10-slim
+FROM ${DOCKER_REGISTRY:-}python:3.12-slim
 
 # 重新声明ARG（FROM之后ARG作用域失效，需要重新声明）
 ARG APT_MIRROR=
@@ -77,4 +77,3 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # 启动应用
 CMD ["sh", "-c", "uv run --directory backend alembic upgrade head && uv run --directory backend python app.py"]
-
