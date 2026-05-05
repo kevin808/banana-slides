@@ -397,7 +397,7 @@ export const OutlineEditor: React.FC = () => {
           title: t('outline.messages.confirmRegenerateTitle'),
           variant: 'warning',
           checkboxLabel: t('outline.messages.lockPageCount'),
-          checkboxDefaultChecked: false
+          checkboxDefaultChecked: false,
         }
       );
       return;

@@ -71,3 +71,23 @@ def test_material_generate_rejected_when_quota_exceeded(app, db_session):
     data = response.get_json()
     assert data['error']['code'] == 'RATE_LIMIT_EXCEEDED'
     assert '不足以继续生成 1 张图片' in data['error']['message']
+
+
+def test_material_process_rejected_when_quota_exceeded(app, db_session):
+    app.config['MAX_FREE_GENERATED_IMAGES'] = 1
+    project, _ = _create_project_with_page(db_session)
+    _create_completed_image_task(db_session, project.id, completed_count=1, task_type='PROCESS_MATERIAL')
+
+    with app.test_client() as client:
+        response = client.post(
+            f'/api/projects/{project.id}/materials/process',
+            data={
+                'operation': 'generate',
+                'prompt': '生成一张示意图',
+            },
+        )
+
+    assert response.status_code == 429
+    data = response.get_json()
+    assert data['error']['code'] == 'RATE_LIMIT_EXCEEDED'
+    assert '不足以继续生成 1 张图片' in data['error']['message']

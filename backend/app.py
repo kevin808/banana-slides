@@ -148,24 +148,62 @@ def create_app():
     with app.app_context():
         # Load settings from database and sync to app.config
         _load_settings_to_config(app)
+        from services.access_code_service import sync_codes_from_env
+
+        synced_count = sync_codes_from_env()
+        if synced_count:
+            logging.info("Synced %s access codes from ACCESS_CODES_JSON", synced_count)
 
     # Access code enforcement on all /api/ routes
     @app.before_request
     def _enforce_access_code():
-        from flask import request, jsonify
+        from flask import g, jsonify, request
+        from services.access_code_service import (
+            classify_quota_bucket,
+            has_quota,
+            is_member_access_enabled,
+            verify_member_code,
+        )
+
         expected = os.getenv('ACCESS_CODE', '').strip()
-        if not expected:
-            return  # not enabled
         if _is_access_code_bypassed():
             return  # trusted host bypass
         if not request.path.startswith('/api/'):
             return  # non-API routes (health, static, etc.)
         if request.path.startswith('/api/access-code/'):
             return  # allow check/verify endpoints
-        code = request.headers.get('X-Access-Code', '')
-        if hmac.compare_digest(code, expected):
+
+        code = (request.headers.get('X-Access-Code') or '').strip()
+
+        # Legacy single access code keeps existing behavior (no quota limit).
+        if expected and hmac.compare_digest(code, expected):
             return
-        return jsonify({'error': 'Access code required'}), 403
+
+        member_code = verify_member_code(code) if code else None
+        protection_enabled = bool(expected) or is_member_access_enabled()
+        if not protection_enabled:
+            return  # protection not enabled
+
+        if not member_code:
+            return jsonify({'error': 'Access code required'}), 403
+
+        quota_bucket = classify_quota_bucket(request.path, request.method)
+        if quota_bucket and not has_quota(member_code, quota_bucket):
+            return jsonify({'error': 'Quota exceeded', 'data': {'bucket': quota_bucket}}), 429
+
+        g.member_code_id = member_code.id
+        g.quota_bucket = quota_bucket
+
+    @app.after_request
+    def _consume_access_code_quota(response):
+        from flask import g
+        from services.access_code_service import increment_usage
+
+        code_id = getattr(g, 'member_code_id', None)
+        quota_bucket = getattr(g, 'quota_bucket', None)
+        if code_id and quota_bucket and response.status_code < 400:
+            increment_usage(code_id, quota_bucket)
+        return response
 
     # Health check endpoint
     @app.route('/health')
@@ -176,21 +214,54 @@ def create_app():
     @app.route('/api/access-code/check', methods=['GET'])
     def check_access_code():
         """Check if access code protection is enabled"""
-        enabled = bool(os.getenv('ACCESS_CODE', '').strip()) and not _is_access_code_bypassed()
+        from services.access_code_service import is_member_access_enabled
+
+        enabled = (
+            not _is_access_code_bypassed()
+            and (bool(os.getenv('ACCESS_CODE', '').strip()) or is_member_access_enabled())
+        )
         return {'data': {'enabled': enabled}}
 
     @app.route('/api/access-code/verify', methods=['POST'])
     def verify_access_code():
         """Verify the provided access code"""
-        from flask import request, jsonify
-        expected = os.getenv('ACCESS_CODE', '').strip()
+        from flask import jsonify, request
+        from services.access_code_service import (
+            get_remaining_quota,
+            is_member_access_enabled,
+            verify_member_code,
+        )
+
         if _is_access_code_bypassed():
             return {'data': {'valid': True}}
-        if not expected:
+
+        expected = os.getenv('ACCESS_CODE', '').strip()
+        member_enabled = is_member_access_enabled()
+        if not expected and not member_enabled:
             return {'data': {'valid': True}}
-        code = (request.json or {}).get('code', '')
-        if hmac.compare_digest(code, expected):
-            return {'data': {'valid': True}}
+
+        data = request.get_json(silent=True) or {}
+        code = (data.get('code') or '').strip()
+
+        if expected and hmac.compare_digest(code, expected):
+            return {
+                'data': {
+                    'valid': True,
+                    'plan_name': 'legacy',
+                    'remaining': {'generate': None, 'export': None},
+                }
+            }
+
+        member_code = verify_member_code(code)
+        if member_code:
+            return {
+                'data': {
+                    'valid': True,
+                    'plan_name': member_code.plan_name,
+                    'remaining': get_remaining_quota(member_code),
+                }
+            }
+
         return jsonify({'error': 'Invalid access code'}), 403
     
     # Output language endpoint

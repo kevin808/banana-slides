@@ -112,7 +112,7 @@ interface ProjectState {
 
   // 生成操作
   generateOutline: () => Promise<void>;
-  generateOutlineStream: () => Promise<{ complete: boolean } | undefined>;
+  generateOutlineStream: (lockPageCount?: boolean) => Promise<{ complete: boolean } | undefined>;
   generateFromDescription: () => Promise<void>;
   generateDescriptions: (detailLevel?: string) => Promise<void>;
   generatePageDescription: (pageId: string, detailLevel?: string) => Promise<void>;
@@ -656,7 +656,7 @@ const debouncedUpdatePage = debounce(
           set({ error: normalizeErrorMessage(message), isOutlineStreaming: false });
           streamDone = true;
         },
-      }, undefined /* language */, lockPageCount);
+      }, undefined, lockPageCount);
 
       streamDone = true;
       await renderPromise;

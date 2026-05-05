@@ -79,13 +79,10 @@ class TestPositionBasedMerge:
         db.session.flush()
 
         assert len(result) == 2
-        # Same page objects reused
         assert result[0].id == old0.id
         assert result[1].id == old1.id
-        # Outline updated
         assert result[0].get_outline_content()['title'] == 'New Title A'
         assert result[1].get_outline_content()['title'] == 'New Title B'
-        # Description and image preserved
         assert result[0].get_description_content()['text'] == 'desc A'
         assert result[0].generated_image_path == '/img/a.png'
         assert result[1].get_description_content()['text'] == 'desc B'

@@ -21,6 +21,10 @@ const i18nDict = {
       filterAll: '全部素材',
       filterNone: '未关联项目',
       moreProjects: '+ 更多项目…',
+      sortNewest: '从新到旧',
+      sortOldest: '从旧到新',
+      sortNameAsc: 'A-Z',
+      sortNameDesc: 'Z-A',
       preview: '预览',
       remove: '删除',
       closePreview: '关闭预览',
@@ -50,6 +54,10 @@ const i18nDict = {
       filterAll: 'All Materials',
       filterNone: 'Unassociated',
       moreProjects: '+ More projects…',
+      sortNewest: 'Newest First',
+      sortOldest: 'Oldest First',
+      sortNameAsc: 'Name A-Z',
+      sortNameDesc: 'Name Z-A',
       preview: 'Preview',
       remove: 'Delete',
       closePreview: 'Close Preview',
@@ -164,7 +172,7 @@ function reducer(s: State, a: Action): State {
     case 'SET_PREVIEW':
       return { ...s, preview: a.preview };
     case 'RESET_EPHEMERAL':
-      return { ...s, selected: new Set(), showAllProjects: false, preview: null };
+      return { ...s, selected: new Set(), preview: null };
     default:
       return s;
   }
@@ -234,22 +242,21 @@ const ToolbarSection: React.FC<{
           ))}
         </select>
 
-        {/* 排序循环按钮 */}
         <button
+          type="button"
           onClick={() => {
             const order: Array<State['sortBy']> = ['newest', 'oldest', 'name-asc', 'name-desc'];
             const currentIndex = order.indexOf(state.sortBy);
-            const nextIndex = (currentIndex + 1) % order.length;
-            dispatch({ type: 'SET_SORT', value: order[nextIndex] });
+            dispatch({ type: 'SET_SORT', value: order[(currentIndex + 1) % order.length] });
           }}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 dark:text-foreground-secondary hover:bg-gray-100 dark:hover:bg-background-hover rounded-md transition-colors"
         >
           <ArrowUpDown size={14} />
           <span>
-            {state.sortBy === 'newest' && '从新到旧'}
-            {state.sortBy === 'oldest' && '从旧到新'}
-            {state.sortBy === 'name-asc' && 'A-Z'}
-            {state.sortBy === 'name-desc' && 'Z-A'}
+            {state.sortBy === 'newest' && t('mc.sortNewest')}
+            {state.sortBy === 'oldest' && t('mc.sortOldest')}
+            {state.sortBy === 'name-asc' && t('mc.sortNameAsc')}
+            {state.sortBy === 'name-desc' && t('mc.sortNameDesc')}
           </span>
         </button>
 

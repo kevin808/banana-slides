@@ -59,8 +59,8 @@ import {
   uploadReferenceFile,
   deleteReferenceFile,
   getReferenceFile,
-  triggerFileParse,
   listProjects,
+  triggerFileParse,
   type ReferenceFile,
 } from '@/api/endpoints';
 import type { Project } from '@/types';
@@ -155,17 +155,17 @@ export const ReferenceFileSelector: React.FC<ReferenceFileSelectorProps> = React
     }
   }, [filterProjectId, parsingIds]);
 
-  // Load projects list
   useEffect(() => {
-    if (isOpen) {
-      listProjects().then(response => {
+    if (!isOpen) return;
+    listProjects(100, 0)
+      .then((response) => {
         if (response.data?.projects) {
           setProjects(response.data.projects);
         }
-      }).catch(error => {
+      })
+      .catch((error) => {
         console.error('Failed to load projects:', error);
       });
-    }
   }, [isOpen]);
 
   useEffect(() => {
@@ -467,6 +467,10 @@ export const ReferenceFileSelector: React.FC<ReferenceFileSelectorProps> = React
     }
   };
 
+  const projectLabel = (project: Project) => {
+    const raw = project.idea_prompt || project.outline_text || `Project ${project.project_id.slice(0, 8)}`;
+    return raw.length > 20 ? `${raw.slice(0, 20)}…` : raw;
+  };
   const sortedFiles = [...files].sort((a, b) => {
     switch (sortBy) {
       case 'newest':
@@ -507,18 +511,19 @@ export const ReferenceFileSelector: React.FC<ReferenceFileSelectorProps> = React
             >
               <option value="all">{t('referenceFile.allAttachments')}</option>
               <option value="none">{t('referenceFile.unclassified')}</option>
-              {projects.map(project => (
-                <option key={project.project_id} value={project.project_id}>{project.idea_prompt}</option>
+              {projects.map((project) => (
+                <option key={project.project_id} value={project.project_id}>
+                  {projectLabel(project)}
+                </option>
               ))}
             </select>
 
-            {/* 排序循环按钮 */}
             <button
+              type="button"
               onClick={() => {
                 const order: Array<typeof sortBy> = ['newest', 'oldest', 'name-asc', 'name-desc'];
                 const currentIndex = order.indexOf(sortBy);
-                const nextIndex = (currentIndex + 1) % order.length;
-                setSortBy(order[nextIndex]);
+                setSortBy(order[(currentIndex + 1) % order.length]);
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 dark:text-foreground-secondary hover:bg-gray-100 dark:hover:bg-background-hover rounded-md transition-colors"
             >
@@ -526,8 +531,8 @@ export const ReferenceFileSelector: React.FC<ReferenceFileSelectorProps> = React
               <span>
                 {sortBy === 'newest' && t('referenceFile.sortNewest')}
                 {sortBy === 'oldest' && t('referenceFile.sortOldest')}
-                {sortBy === 'name-asc' && 'A-Z'}
-                {sortBy === 'name-desc' && 'Z-A'}
+                {sortBy === 'name-asc' && t('referenceFile.sortNameAsc')}
+                {sortBy === 'name-desc' && t('referenceFile.sortNameDesc')}
               </span>
             </button>
 
@@ -706,4 +711,3 @@ export const ReferenceFileSelector: React.FC<ReferenceFileSelectorProps> = React
     </Modal>
   );
 });
-
