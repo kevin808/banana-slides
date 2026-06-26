@@ -1,9 +1,14 @@
 from models import AccessCode, Page, Project, db
 from services.access_code_service import hash_code
+from sqlalchemy import inspect
 
 
 def _reset_database():
+    inspector = inspect(db.engine)
+    existing_tables = set(inspector.get_table_names())
     for table in reversed(db.metadata.sorted_tables):
+        if table.name not in existing_tables:
+            continue
         db.session.execute(table.delete())
     db.session.commit()
 

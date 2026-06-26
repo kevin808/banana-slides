@@ -7,6 +7,7 @@
   <a href="https://trendshift.io/repositories/22056" target="_blank">
     <img src="https://trendshift.io/api/badge/repositories/22056" alt="Anionex%2Fbanana-slides | Trendshift" width="265" height="58">
   </a>
+  <br>
   <a href="https://hellogithub.com/repository/Anionex/banana-slides" target="_blank">
     <img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=c8a0ee51918e4353af08012b8472b85e&claim_uid=CtDTm2jbUHhVGBr&theme=neutral" alt="Featured｜HelloGitHub" width="265" height="58">
   </a>
@@ -35,12 +36,32 @@
   <a href="https://bananaslides.online/"><b>🚀 在线 Demo</b></a>
   &nbsp;|&nbsp;
   <a href="https://docs.bananaslides.online/"><b>📖 文档</b></a>
+  &nbsp;|&nbsp;
+ <a href="https://github.com/Anionex/banana-slides#-%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95"><b>部署方法</b></a>
 </p>
 <p>
   如果该项目对你有用，欢迎 <b>Star 🌟</b> & <b>Fork 🍴</b>
 </p>
 
 </div>
+
+## 🔥 最新动态
+- **[2026-04-25]**： 素材工具箱上线 — 在原有素材生成基础上新增整图编辑、框选编辑（overlay/replace）、智能擦除三种模式，统一入口一站式操作
+- **[2026-04-25]**：支持通过 OpenAI 官方 OAuth 登录绑定账号，绑定后可直接使用 Codex 作为文本/图片生成 provider，无需手动填写 API Key，plus账号五小时可生成100+ 2k图（[教程](https://ziy68cvfvu3.feishu.cn/wiki/LDSOwPzkhiNonkkNTF1ct2VBnNc))（基于 OpenAI 官方 OAuth PKCE 授权流程，非逆向）
+- **[2026-04-25]**：支持保存自定义文字风格描述模板，可命名、标色、持久化复用，无需每次重新输入
+- **[2026-04-23]**：支持了gpt-image-2模型，同时导出可编辑背景效果也因模型能力升级得到了提升（在 设置-导出选项-背景获取 选择 生成式获取）
+- **[2026-04-11]**：支持了[cli操作并加入了agent skills](https://docs.bananaslides.online/cli)
+- **[2026-03]**：加入了若干功能和优化，如额外字段、多比例设定等
+- **[2026-02-09]**： 新功能和优化
+  * 新功能
+    * 支持在首页、大纲、描述卡片里面粘贴图片并立即识别，并提供更好的交互体验
+    * 大纲章节手动编辑：支持手动调整页面所属章节（part）。
+    * Docker 多架构：镜像支持 amd64 / arm64 构建。
+    * 国际化 + 暗黑模式：新增中英文切换；支持亮色/暗色/跟随系统主题；全组件适配暗黑模式。
+  * 修复与体验优化
+    * 修复导出相关 500、参考文件关联时序、outline/page 数据错位、任务轮询错误项目、描述生成无限轮询、图片预览内存泄漏、批量删除部分失败处理。
+    * 优化格式示例提示、HTTP 错误提示文案、Modal 关闭体验、清理旧项目 localStorage、移除首次创建项目冗余提示。
+    * 若干其他优化和修复
 
 ## ✨ 项目缘起
 你是否也曾陷入这样的困境：明天就要汇报，但PPT还是一片空白；脑中有无数精彩的想法，却被繁琐的排版和设计消磨掉所有热情？
@@ -102,6 +123,7 @@
 ### 2. 强大的素材解析能力
 - **多格式支持**：上传 PDF/Docx/MD/Txt 等文件，后台自动解析内容。
 - **智能提取**：自动识别文本中的关键点、图片链接和图表信息，为生成提供丰富素材。
+- **图片自动入库**：文档解析出的图片会随参考文件关联项目后自动进入项目素材库，后续可直接复用。
 - **风格参考**：支持上传参考图片或模板，定制 PPT 风格。
 
 <img width="1920" height="1080" alt="文件解析与素材处理" src="https://github.com/user-attachments/assets/8cda1fd2-2369-4028-b310-ea6604183936" />
@@ -116,6 +138,7 @@
 
 ### 4. 开箱即用的格式导出
 - **多格式支持**：一键导出标准 **PPTX** 或 **PDF** 文件。
+- **播放设置**：导出 PPTX 前可开启页面切换动画，支持淡入淡出、翻页、平移、擦除、分割、百叶窗、棋盘、时钟等经典效果并可多选随机应用。
 - **完美适配**：默认 16:9 比例，排版无需二次调整，直接演示。
 
 <img width="1000" alt="image" src="https://github.com/user-attachments/assets/3e54bbba-88be-4f69-90a1-02e875c25420" />
@@ -146,32 +169,6 @@
 
 
 
-## 🔥 近期更新
-- [2026-04-25]： 素材工具箱上线 — 在原有素材生成基础上新增整图编辑、框选编辑（overlay/replace）、智能擦除三种模式，统一入口一站式操作
-- [2026-04-25]：支持通过 OpenAI 官方 OAuth 登录绑定账号，绑定后可直接使用 Codex 作为文本/图片生成 provider，无需手动填写 API Key（基于 OpenAI 官方 OAuth PKCE 授权流程，非逆向）
-- [2026-04-25]：支持保存自定义文字风格描述模板，可命名、标色、持久化复用，无需每次重新输入
-- [2026-04-23]：支持了gpt-image-2模型，同时导出可编辑背景效果也因模型能力升级得到了提升（在 设置-导出选项-背景获取 选择 生成式获取）
-- [2026-04-11]：支持了[cli操作并加入了agent skills](https://docs.bananaslides.online/cli)
-- [2026-03]：加入了若干功能和优化，如额外字段、多比例设定等
-- [2026-02-09]： 新功能和优化
-  * 新功能
-    * 支持在首页、大纲、描述卡片里面粘贴图片并立即识别，并提供更好的交互体验
-    * 大纲章节手动编辑：支持手动调整页面所属章节（part）。
-    * Docker 多架构：镜像支持 amd64 / arm64 构建。
-    * 国际化 + 暗黑模式：新增中英文切换；支持亮色/暗色/跟随系统主题；全组件适配暗黑模式。
-  * 修复与体验优化
-    * 修复导出相关 500、参考文件关联时序、outline/page 数据错位、任务轮询错误项目、描述生成无限轮询、图片预览内存泄漏、批量删除部分失败处理。
-    * 优化格式示例提示、HTTP 错误提示文案、Modal 关闭体验、清理旧项目 localStorage、移除首次创建项目冗余提示。
-    * 若干其他优化和修复
-- [2026-01-04]：v0.4.0发布：可编辑pptx导出全面升级：
-  * 支持最大程度还原图片中文字的字号、颜色、加粗等样式；
-  * 支持了识别表格中的文字内容；
-  * 更精确的文字大小和文字位置还原逻辑
-  * 优化导出工作流，大大减少了导出后背景图残留文字的现象；
-  * 支持页面多选逻辑，灵活选择需要生成和导出的具体页面。
-  * **详细效果和使用方法见 https://github.com/Anionex/banana-slides/issues/121**
-
-
 ## 🗺️ 开发计划
 
 | 状态 | 里程碑 |
@@ -187,11 +184,12 @@
 | 🔄 进行中 | 支持多层次、精确抠图的可编辑pptx导出 |
 | 🔄 进行中 | 网络搜索 |
 | 🔄 进行中 | Agent 模式 |
-| ✅ 已完成 | TTS 讲解视频导出（中/英/日多音色、字幕、Ken Burns 动效） |
+| ✅ 已完成 | TTS 讲解视频导出（中/英/日多音色、字幕） |
 | 🚍 部分 | 优化前端加载速度 |
 | 🧭 规划中 | 在线播放功能 |
 | 🧭 规划中 | 简单的动画和页面切换效果 |
 | 🚍 部分 | 多语种支持 |
+| |
 
 ## 📦 使用方法
 
@@ -199,7 +197,7 @@
 这是最简单的方式，无需安装docker或下载项目，创建后可直接进入应用
 
 
-1. 通过雨云一键部署和启动本应用 (带宽大，适合高清图片生成和下载。新用户有15天免费试用)
+1. 通过雨云一键部署和启动本应用 (带宽大，适合高清图片生成和下载。新用户有免费试用)
 - [图文教程](https://ziy68cvfvu3.feishu.cn/wiki/B5RIwg3OUiCfo9kyadzcR9CInnc?from=from_copylink)
 
 [![通过雨云一键部署](https://rainyun-apps.cn-nb1.rains3.com/materials/deploy-on-rainyun-cn.svg)](https://app.rainyun.com/apps/rca/store/7549/anionex_)
@@ -215,7 +213,7 @@
 
 如果你使用 **Windows 或 macOS**，请先[安装 **Docker Desktop**](https://docs.docker.com/desktop/setup/install/windows-install/)，并确保 Docker 正在运行（Windows 可检查系统托盘图标；macOS 可检查菜单栏图标），然后按文档中的相同步骤操作。
 
-> **提示**：如果遇到问题，Windows 用户请在 Docker Desktop 设置中启用 **WSL 2 后端**（推荐）；同时确保端口 **3000** 和 **5000** 未被占用。
+> **提示**：如果遇到问题，Windows 用户请在 Docker Desktop 设置中启用 **WSL 2 后端**（推荐）；同时确保端口 **3011** 和 **5011** 未被占用。
 
 </details>
 
@@ -232,7 +230,7 @@ cd banana-slides
 cp .env.example .env
 ```
 
-**（可选， 也可以启动后在用户界面配置）** 编辑 `.env` 文件，配置必要的环境变量：
+**（可选， 也可以启动后在用户界面配置，[教程可点击此处](https://ziy68cvfvu3.feishu.cn/wiki/GiNawdmpiinSRqkGspocqEWAnkh?from=from_copylink )）** 编辑 `.env` 文件，配置必要的环境变量：
 
 <details>
 <summary>点击展开详情</summary>
@@ -275,6 +273,10 @@ SENSENOVA_API_KEY=your-sensenova-api-key      # 商汤日日新
 MINIMAX_API_KEY=your-minimax-api-key          # MiniMax
 ...
 ```
+
+> Banana Slides explicitly packages the LazyLLM online provider SDKs used by domestic vendors:
+> `volcengine-python-sdk[ark]` for Doubao, `dashscope` for Qwen/Wanxiang, and `zhipuai` for GLM/Zhipu.
+> LazyLLM also exposes `lazyllm install online-advanced`, but the PyPI wheel may not publish that group as a standard install extra, so Docker/prebuilt images rely on these explicit dependencies instead.
   
 </details>
 
@@ -316,6 +318,8 @@ docker compose -f docker-compose.prod.yml up -d
 - `anoinex/banana-slides-frontend:latest`
 - `anoinex/banana-slides-backend:latest`
 
+启动后可在应用内进入 **设置 → 关于 → 检查更新**，应用会根据当前版本 SHA 判断是否已有可用更新；源码运行时也会用当前 Git SHA 参与判断。
+
 **从头构建镜像**
 
 ```bash
@@ -337,8 +341,8 @@ docker compose up -d
 
 3. **访问应用**
 
-- 前端：http://localhost:3000
-- 后端 API：http://localhost:5000
+- 前端：http://localhost:3011
+- 后端 API：http://localhost:5011
 
 4. **查看日志**
 
@@ -362,6 +366,8 @@ docker compose down
 6. **更新项目**
 
 **使用预构建镜像（docker-compose.prod.yml）**
+
+也可以先在应用内进入 **设置 → 关于 → 检查更新** 查看是否已有新版本。
 
 ```bash
 docker compose -f docker-compose.prod.yml pull
@@ -449,21 +455,22 @@ npm install
 
 3. **配置API地址**
 
-前端会自动连接到 `http://localhost:5000` 的后端服务。如需修改，请编辑 `src/api/client.ts`。
+前端会通过 Vite proxy 自动连接到 `BACKEND_PORT` 指定的后端服务（默认 `http://localhost:5011`）。如需修改，请在项目根目录的 `.env` 中设置 `BACKEND_PORT`。
 
 
 #### 启动后端服务
 > （可选）如果本地已有重要数据，升级前建议先备份数据库：  
 > `cp backend/instance/database.db backend/instance/database.db.bak`
+> 备注： 默认配置下，模板、素材、成品都在uploads/文件夹中
 
 ```bash
 cd backend
 uv run alembic upgrade head && uv run python app.py
 ```
 
-后端服务将在 `http://localhost:5000` 启动。
+后端服务将在 `http://localhost:5011` 启动。
 
-访问 `http://localhost:5000/health` 验证服务是否正常运行。
+访问 `http://localhost:5011/health` 验证服务是否正常运行。
 
 #### 启动前端开发服务器
 
@@ -472,7 +479,7 @@ cd frontend
 npm run dev
 ```
 
-前端开发服务器将在 `http://localhost:3000` 启动。
+前端开发服务器将在 `http://localhost:3011` 启动。
 
 打开浏览器访问即可使用应用。
 
@@ -486,11 +493,11 @@ React 18 + TypeScript + Vite 5 + Zustand
 Python 3.10+ + Flask 3.0 + uv + SQLite
 
 ## 交流群
-为了方便大家沟通互助，建此微信交流群.
 
 欢迎提出新功能建议或反馈，本人也会~~佛系~~回答大家问题
 
-<img width="312" alt="image" src="https://github.com/user-attachments/assets/f96ec821-20d8-469f-9b40-ddb7d4db8df2" />
+<img width="312" alt="image" src="https://github.com/user-attachments/assets/e1273f35-7539-4c5f-b737-d79213b84fed" />
+
 
 
 欢迎关注作者的社交媒体，我会分享有关本项目和有关AI的信息：
@@ -508,6 +515,10 @@ Python 3.10+ + Flask 3.0 + uv + SQLite
 ## **🔧 常见问题**
 可见[官网文档](https://docs.bananaslides.online/zh/faq)
 
+也可以直接到 DeepWiki 提问
+<a href="https://deepwiki.com/Anionex/banana-slides"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
+
+
 
 ## 🤝 贡献指南
 
@@ -523,6 +534,8 @@ Python 3.10+ + Flask 3.0 + uv + SQLite
 
 本项目采用 **GNU Affero General Public License v3.0（AGPL-3.0）** 开源，
 可自由用于个人学习、研究、试验、教育或非营利科研活动等非商业用途；
+
+如有疑问或合作意向，可联系: davidyang042@gmail.com
 
 
 
@@ -544,7 +557,7 @@ Python 3.10+ + Flask 3.0 + uv + SQLite
 </a>
 
 
-感谢<a href="https://api.chatfire.site/login?inviteCode=A15CD6A0">AI火宝</a>对本项目的赞助
+感谢AI火宝对本项目的赞助
  
 </div>
 
@@ -565,7 +578,7 @@ Python 3.10+ + Flask 3.0 + uv + SQLite
 <img width="240" alt="image" src="https://github.com/user-attachments/assets/fd7a286d-711b-445e-aecf-43e3fe356473" />
 
 感谢以下朋友对项目的无偿赞助支持：
-> @雅俗共赏、@曹峥、@以年观日、@John、@胡yun星Ethan, @azazo1、@刘聪NLP、@🍟、@苍何、@万瑾、@biubiu、@law、@方源、@寒松Falcon
+> @雅俗共赏、@曹峥、@以年观日、@John、@胡yun星Ethan, @azazo1、@刘聪NLP、@🍟、@苍何、@万瑾、@biubiu、@law、@方源、@寒松Falcon、@刘星宇&小陀螺AIGC
 > 如对赞助列表有疑问，可<a href="mailto:davidyang042@gmail.com">联系作者</a>
  
 ## 📈 项目统计

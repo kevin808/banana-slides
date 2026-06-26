@@ -22,7 +22,7 @@ load_dotenv(dotenv_path=_env_file, override=True)
 from flask import Flask
 from flask_cors import CORS
 from models import db
-from config import Config
+from config import Config, DEFAULT_BACKEND_PORT, DEFAULT_FRONTEND_PORT
 from controllers.material_controller import material_bp, material_global_bp
 from controllers.reference_file_controller import reference_file_bp
 from controllers.settings_controller import settings_bp
@@ -101,7 +101,7 @@ def create_app():
     app.config['UPLOAD_FOLDER'] = upload_folder
     
     # CORS configuration (parse from environment)
-    raw_cors = os.getenv('CORS_ORIGINS', 'http://localhost:3000')
+    raw_cors = os.getenv('CORS_ORIGINS', f'http://localhost:{DEFAULT_FRONTEND_PORT}')
     if raw_cors.strip() == '*':
         cors_origins = '*'
     else:
@@ -121,7 +121,19 @@ def create_app():
     logging.getLogger('httpcore').setLevel(logging.WARNING)
     logging.getLogger('httpx').setLevel(logging.WARNING)
     logging.getLogger('urllib3').setLevel(logging.WARNING)
-    logging.getLogger('werkzeug').setLevel(logging.INFO)  # Flask开发服务器日志保持INFO
+    werkzeug_log_level = app.config.get('WERKZEUG_LOG_LEVEL', 'INFO')
+    if isinstance(werkzeug_log_level, str):
+        werkzeug_log_level = werkzeug_log_level.strip()
+        werkzeug_log_level = (
+            int(werkzeug_log_level)
+            if werkzeug_log_level.isdigit()
+            else werkzeug_log_level.upper()
+        )
+    werkzeug_logger = logging.getLogger('werkzeug')
+    try:
+        werkzeug_logger.setLevel(werkzeug_log_level)
+    except (ValueError, TypeError):
+        werkzeug_logger.setLevel(logging.INFO)
     logging.getLogger('volcenginesdkarkruntime').setLevel(logging.WARNING)
 
     # Initialize extensions
@@ -340,6 +352,8 @@ def _load_settings_to_config(app):
         img_workers = settings.max_image_workers or Config.MAX_IMAGE_WORKERS
         app.config['MAX_DESCRIPTION_WORKERS'] = desc_workers
         app.config['MAX_IMAGE_WORKERS'] = img_workers
+        from services.task_manager import sync_resource_limits
+        sync_resource_limits(desc_workers, img_workers)
         logging.info(f"Loaded worker settings: desc={desc_workers}, img={img_workers}")
 
         # Load model settings (FIX for Issue #136: these were missing before)
@@ -437,7 +451,7 @@ def _compute_worktree_port(base_port: int) -> int:
     """Compute a deterministic port from the worktree directory name.
 
     Uses MD5 of the project root basename so each worktree gets a unique,
-    stable port pair (backend 5xxx, frontend 3xxx) without manual config.
+    stable port pair (backend 51xx, frontend 31xx) without manual config.
     """
     import hashlib
     basename = _project_root.name
@@ -452,7 +466,7 @@ if __name__ == '__main__':
     elif os.getenv('BACKEND_PORT'):
         port = int(os.getenv('BACKEND_PORT'))
     else:
-        port = _compute_worktree_port(5000)
+        port = _compute_worktree_port(DEFAULT_BACKEND_PORT)
     debug = os.getenv('FLASK_ENV', 'development') == 'development'
     
     logging.info(

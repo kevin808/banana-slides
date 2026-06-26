@@ -11,7 +11,12 @@ from services.image_quota_service import (
     build_image_generation_quota_message,
     check_image_generation_quota,
 )
-from services.task_manager import task_manager, generate_single_page_image_task, edit_page_image_task
+from services.task_manager import (
+    task_manager,
+    generate_single_page_image_task,
+    edit_page_image_task,
+    get_image_prompt_field_names,
+)
 from datetime import datetime
 from pathlib import Path
 from werkzeug.utils import secure_filename
@@ -478,6 +483,7 @@ def generate_page_image(project_id, page_id):
         
         # Get app instance for background task
         app = current_app._get_current_object()
+        image_prompt_field_names = get_image_prompt_field_names()
         
         # Submit background task
         task_manager.submit_task(
@@ -493,7 +499,8 @@ def generate_page_image(project_id, page_id):
             current_app.config['DEFAULT_RESOLUTION'],
             app,
             combined_requirements if combined_requirements.strip() else None,
-            language
+            language,
+            image_prompt_field_names
         )
         
         # Return task_id immediately

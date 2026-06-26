@@ -73,6 +73,7 @@ export type ExportInpaintMethod = 'generative' | 'baidu' | 'hybrid';
 export interface Project {
   project_id: string;  // 后端返回 project_id
   id?: string;         // 前端使用的别名
+  project_title?: string;
   idea_prompt: string;
   outline_text?: string;  // 用户输入的大纲文本（用于outline类型）
   description_text?: string;  // 用户输入的描述文本（用于description类型）
@@ -93,6 +94,24 @@ export interface Project {
   pages: Page[];
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * 素材信息
+ */
+export interface Material {
+  id: string;
+  project_id?: string | null;
+  filename: string;
+  url: string;
+  relative_path: string;
+  created_at: string;
+  updated_at: string;
+  prompt?: string;
+  original_filename?: string | null;
+  source_filename?: string;
+  name?: string;
+  caption?: string | null;
 }
 
 // 任务状态
