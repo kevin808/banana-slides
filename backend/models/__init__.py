@@ -26,5 +26,6 @@ from .reference_file import ReferenceFile
 from .settings import Settings
 from .access_code import AccessCode
 from .user_style_template import UserStyleTemplate
+from .project_template_asset import ProjectTemplateAsset
 
-__all__ = ['db', 'Project', 'Page', 'Task', 'UserTemplate', 'PageImageVersion', 'Material', 'ReferenceFile', 'Settings', 'AccessCode', 'UserStyleTemplate']
+__all__ = ['db', 'Project', 'Page', 'Task', 'UserTemplate', 'PageImageVersion', 'Material', 'ReferenceFile', 'Settings', 'AccessCode', 'UserStyleTemplate', 'ProjectTemplateAsset']

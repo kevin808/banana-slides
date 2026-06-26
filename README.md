@@ -550,17 +550,34 @@ Python 3.10+ + Flask 3.0 + uv + SQLite
 
 
 <div align="center">
+<a href="中文链接">
+    <img src="./assets/huoshan.png" alt="火山引擎" width="150"/ >
+    <p>感谢<strong>火山引擎 </strong>赞助了本项目<br>
+      方舟 Agent Plan 限时2.5折订阅，<a href="https://www.volcengine.com/activity/ai618?utm_campaign=hw&utm_content=hw&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=banana-slides">点击链接抢购</a></p>
+</a>
+</div>
+
+<!-- 注意，英文README使用这个版本： -->
+<!-- 
+<div align="center">
+<a href="英文链接">
+    <img src="./assets/byteplus.png" alt="BytePlus" width="150"/ >
+    <p> Thanks to Dola seed for sponsoring this project! Register via <a href="https://www.byteplus.com/en/product/modelark?utm_campaign=hw&utm_content=banana-slides&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=banana-slides">this link</a> to get 500,000 tokens of free inference quota per model. </p>
+</a>
+</div>
+-->
+
+
+<div align="center">
 
  <br>
 
 <a href="https://api.chatfire.site/login?inviteCode=A15CD6A0"><img width="200" alt="image" src="https://github.com/user-attachments/assets/d6bd255f-ba2c-4ea3-bd90-fef292fc3397" />
 </a>
 
-
 感谢AI火宝对本项目的赞助
  
 </div>
-
 
 
 ## 致谢
