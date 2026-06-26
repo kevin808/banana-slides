@@ -2,21 +2,74 @@
 Export Service - handles PPTX and PDF export
 Based on demo.py create_pptx_from_images()
 """
+import math
 import os
 import json
 import logging
+import random
+import re
 import tempfile
+import base64
+import hashlib
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 from textwrap import dedent
 from dataclasses import dataclass, field
 from pptx import Presentation
 from pptx.util import Inches
+from pptx.oxml.xmlchemy import OxmlElement
+from pptx.oxml.ns import qn
 from PIL import Image
 import io
 import tempfile
 import img2pdf
+import fitz  # PyMuPDF
+from utils.pptx_math import latex_to_display_text, looks_like_latex_math
 logger = logging.getLogger(__name__)
+
+
+class ExportError(Exception):
+    """
+    导出过程中的错误异常
+
+    当 fail_fast=True 时，任何导出错误都会抛出此异常，
+    包含详细的错误信息和帮助提示。
+    """
+    def __init__(self, message: str, error_type: str = 'unknown', details: Dict[str, Any] = None, help_text: str = None):
+        """
+        Args:
+            message: 错误消息
+            error_type: 错误类型 (style_extraction, text_render, image_add, inpaint, config, service)
+            details: 详细错误信息
+            help_text: 帮助提示文本
+        """
+        super().__init__(message)
+        self.message = message
+        self.error_type = error_type
+        self.details = details or {}
+        self.help_text = help_text or self._get_default_help_text(error_type)
+
+    def _get_default_help_text(self, error_type: str) -> str:
+        """根据错误类型返回默认帮助提示"""
+        help_texts = {
+            'style_extraction': '样式提取失败可能是由于百度OCR API配置问题。请检查「项目设置 -> 导出设置」中的配置，或尝试切换到「MinerU提取」方法。',
+            'text_render': '文本渲染失败可能是由于字体或编码问题。请检查页面内容是否包含特殊字符。',
+            'image_add': '图片添加失败可能是由于图片文件损坏或路径错误。请尝试重新生成该页面的图片。',
+            'inpaint': '背景修复失败可能是由于API配置问题。请检查「项目设置 -> 导出设置」中的背景图获取方法配置。',
+            'config': '配置错误。请检查「项目设置 -> 导出设置」中的相关配置。',
+            'service': '服务不可用。请稍后重试或联系管理员。',
+        }
+        return help_texts.get(error_type, '如果问题持续出现，可以在「项目设置 -> 导出设置」中开启「返回半成品」选项以跳过错误继续导出。')
+
+    def to_dict(self) -> Dict[str, Any]:
+        """转换为字典格式"""
+        return {
+            'message': self.message,
+            'error_type': self.error_type,
+            'details': self.details,
+            'help_text': self.help_text
+        }
 
 
 @dataclass
@@ -125,16 +178,149 @@ class ExportWarnings:
         }
 
 
+def _get_page_size_inches(aspect_ratio: str = '16:9', base: float = 10.0) -> Tuple[float, float]:
+    """Return (width, height) in inches for a given aspect ratio string."""
+    try:
+        w, h = (float(x) for x in aspect_ratio.split(':'))
+        if not (math.isfinite(w) and math.isfinite(h) and w > 0 and h > 0):
+            raise ValueError(f"invalid dimensions: {w}:{h}")
+    except (ValueError, AttributeError) as e:
+        logger.warning(f"Invalid aspect ratio '{aspect_ratio}', falling back to 16:9: {e}")
+        w, h = 16.0, 9.0
+    if w >= h:
+        return base, base * h / w
+    else:
+        return base * w / h, base
+
+
 class ExportService:
     """Service for exporting presentations"""
-    
+
+    PPTX_TRANSITION_EFFECTS = {
+        'fade',
+        'page_turn',
+        'push',
+        'wipe',
+        'split',
+        'blinds',
+        'checker',
+        'wheel',
+    }
+
+    @staticmethod
+    def _apply_slide_transition(slide, effect: str) -> None:
+        """Add a PowerPoint slide transition node to a slide XML element."""
+        transition = OxmlElement('p:transition')
+        transition.set('spd', 'med')
+
+        if effect == 'fade':
+            transition.append(OxmlElement('p:fade'))
+        elif effect == 'page_turn':
+            cover = OxmlElement('p:cover')
+            cover.set('dir', 'l')
+            transition.append(cover)
+        elif effect == 'push':
+            push = OxmlElement('p:push')
+            push.set('dir', 'l')
+            transition.append(push)
+        elif effect == 'wipe':
+            wipe = OxmlElement('p:wipe')
+            wipe.set('dir', 'l')
+            transition.append(wipe)
+        elif effect == 'split':
+            split = OxmlElement('p:split')
+            split.set('orient', 'horz')
+            split.set('dir', 'out')
+            transition.append(split)
+        elif effect == 'blinds':
+            blinds = OxmlElement('p:blinds')
+            blinds.set('dir', 'vert')
+            transition.append(blinds)
+        elif effect == 'checker':
+            checker = OxmlElement('p:checker')
+            checker.set('dir', 'horz')
+            transition.append(checker)
+        elif effect == 'wheel':
+            wheel = OxmlElement('p:wheel')
+            wheel.set('spokes', '1')
+            transition.append(wheel)
+        else:
+            return
+
+        slide_element = slide._element
+        existing = slide_element.find(qn('p:transition'))
+        if existing is not None:
+            slide_element.remove(existing)
+
+        clr_map_ovr = slide_element.find(qn('p:clrMapOvr'))
+        if clr_map_ovr is not None:
+            insert_at = slide_element.index(clr_map_ovr) + 1
+        else:
+            c_sld = slide_element.find(qn('p:cSld'))
+            insert_at = slide_element.index(c_sld) + 1 if c_sld is not None else 0
+
+        slide_element.insert(insert_at, transition)
+
     # NOTE: clean background生成功能已迁移到解耦的InpaintProvider实现
     # - DefaultInpaintProvider: 基于mask的精确区域重绘（Volcengine）
     # - GenerativeEditInpaintProvider: 基于生成式大模型的整图编辑重绘（Gemini等）
     # 使用方式: from services.image_editability import InpaintProviderFactory
+
+    @staticmethod
+    def _build_style_extraction_error(
+        message: str,
+        *,
+        element_id: Optional[str] = None,
+        text_content: Optional[str] = None,
+        page_idx: Optional[int] = None
+    ) -> ExportError:
+        details: Dict[str, Any] = {}
+        if element_id:
+            details['element_id'] = element_id
+        if text_content:
+            details['text_content'] = text_content[:50]
+        if page_idx is not None:
+            details['page'] = page_idx + 1
+
+        lowered = message.lower()
+        if '不支持图片输入' in message or 'support image input' in lowered:
+            help_text = (
+                '当前用于图片样式提取的 caption/image_caption 模型不支持图片输入。'
+                '请在设置中改成支持视觉输入的模型，或检查 OpenAI 格式下的 image caption provider / model 配置。'
+            )
+        elif (
+            'ssl' in lowered
+            or 'unexpected_eof_while_reading' in lowered
+            or 'eof occurred in violation of protocol' in lowered
+            or 'max retries exceeded' in lowered
+            or 'connection aborted' in lowered
+            or 'connection reset' in lowered
+        ) and ('codex' in lowered or 'chatgpt' in lowered):
+            help_text = (
+                '连接 Codex 服务时网络中断，导致文本样式提取失败。'
+                '请稍后重试；如果反复出现，可重新登录 Codex/OpenAI 后再试。'
+                '若只想先拿到可编辑结果，也可以在「项目设置 -> 导出设置」中开启「返回半成品」。'
+            )
+        else:
+            help_text = (
+                '文本样式提取依赖视觉模型分析文本截图。请检查 image caption provider、模型名与 API 权限；'
+                '如果只想先拿到可编辑结果，也可以在「项目设置 -> 导出设置」中开启「返回半成品」。'
+            )
+
+        return ExportError(
+            message=f"文本样式提取失败: {message}",
+            error_type='style_extraction',
+            details=details,
+            help_text=help_text,
+        )
     
     @staticmethod
-    def create_pptx_from_images(image_paths: List[str], output_file: str = None) -> bytes:
+    def create_pptx_from_images(
+        image_paths: List[str],
+        output_file: str = None,
+        aspect_ratio: str = '16:9',
+        transition_effects: Optional[List[str]] = None,
+    ) -> bytes:
         """
         Create PPTX file from image paths
         Based on demo.py create_pptx_from_images()
@@ -149,10 +335,29 @@ class ExportService:
         # Create presentation
         prs = Presentation()
         
-        # Set slide dimensions to 16:9 (width 10 inches, height 5.625 inches)
-        prs.slide_width = Inches(10)
-        prs.slide_height = Inches(5.625)
+        # Set author/date metadata for exported PPTX
+        try:
+            core = prs.core_properties
+            now = datetime.now(timezone.utc)
+            core.author = "banana-slides"
+            core.last_modified_by = "banana-slides"
+            core.created = now
+            core.modified = now
+            core.last_printed = None
+        except Exception as e:
+            logger.warning(f"Failed to set core properties: {e}")
         
+        # Set slide dimensions based on aspect ratio
+        page_w, page_h = _get_page_size_inches(aspect_ratio)
+        prs.slide_width = Inches(page_w)
+        prs.slide_height = Inches(page_h)
+        
+        valid_transition_effects = [
+            effect for effect in (transition_effects or [])
+            if effect in ExportService.PPTX_TRANSITION_EFFECTS
+        ]
+        transition_effect_queue: List[str] = []
+
         # Add each image as a slide
         for image_path in image_paths:
             if not os.path.exists(image_path):
@@ -171,6 +376,15 @@ class ExportService:
                 width=prs.slide_width,
                 height=prs.slide_height
             )
+
+            if valid_transition_effects:
+                if not transition_effect_queue:
+                    transition_effect_queue = valid_transition_effects[:]
+                    random.shuffle(transition_effect_queue)
+                ExportService._apply_slide_transition(
+                    slide,
+                    transition_effect_queue.pop(),
+                )
         
         # Save or return bytes
         if output_file:
@@ -184,7 +398,7 @@ class ExportService:
             return pptx_bytes.getvalue()
     
     @staticmethod
-    def create_pdf_from_images(image_paths: List[str], output_file: str = None) -> Optional[bytes]:
+    def create_pdf_from_images(image_paths: List[str], output_file: str = None, aspect_ratio: str = '16:9') -> Optional[bytes]:
         """
         Create PDF file from image paths using img2pdf (low memory usage)
 
@@ -209,13 +423,17 @@ class ExportService:
         try:
             logger.info(f"Using img2pdf for PDF export ({len(valid_paths)} pages, low memory mode)")
 
-            # Set page layout: 16:9 aspect ratio (10 inches × 5.625 inches)
+            page_w, page_h = _get_page_size_inches(aspect_ratio)
             layout_fun = img2pdf.get_layout_fun(
-                pagesize=(img2pdf.in_to_pt(10), img2pdf.in_to_pt(5.625))
+                pagesize=(img2pdf.in_to_pt(page_w), img2pdf.in_to_pt(page_h)),
+                fit=img2pdf.FitMode.fill,
             )
 
             # Convert images to PDF
             pdf_bytes = img2pdf.convert(valid_paths, layout_fun=layout_fun)
+
+            # Add metadata
+            pdf_bytes = ExportService._add_pdf_metadata(pdf_bytes)
 
             if output_file:
                 with open(output_file, "wb") as f:
@@ -225,10 +443,55 @@ class ExportService:
                 return pdf_bytes
         except (img2pdf.ImageOpenError, ValueError, IOError) as e:
             logger.warning(f"img2pdf conversion failed: {e}. Falling back to Pillow (high memory usage).")
-            return ExportService.create_pdf_from_images_pillow(valid_paths, output_file)
+            return ExportService.create_pdf_from_images_pillow(valid_paths, output_file, aspect_ratio)
 
     @staticmethod
-    def create_pdf_from_images_pillow(image_paths: List[str], output_file: str = None) -> Optional[bytes]:
+    def _add_pdf_metadata(pdf_bytes: bytes) -> bytes:
+        """Add author metadata to PDF (including XMP for Windows compatibility)"""
+        try:
+            doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+
+            doc.set_metadata({
+                "author": "banana-slides",
+                "producer": "banana-slides",
+                "creator": "banana-slides"
+            })
+
+            now = datetime.now(timezone.utc)
+            iso_time = now.isoformat()
+
+            content_hash = hashlib.md5(pdf_bytes[:1024]).hexdigest()
+
+            xmp = dedent(f'''\
+                <?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
+                <x:xmpmeta xmlns:x="adobe:ns:meta/">
+                  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+                    <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/">
+                      <dc:creator><rdf:Seq><rdf:li>banana-slides</rdf:li></rdf:Seq></dc:creator>
+                    </rdf:Description>
+                    <rdf:Description rdf:about="" xmlns:pdf="http://ns.adobe.com/pdf/1.3/">
+                      <pdf:Producer>banana-slides</pdf:Producer>
+                    </rdf:Description>
+                    <rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/">
+                      <xmp:CreatorTool>banana-slides</xmp:CreatorTool>
+                      <xmp:CreateDate>{iso_time}</xmp:CreateDate>
+                      <xmp:MetadataDate>{iso_time}</xmp:MetadataDate>
+                    </rdf:Description>
+                    <rdf:Description rdf:about="" xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/">
+                      <xmpMM:DocumentID>uuid:{content_hash}</xmpMM:DocumentID>
+                    </rdf:Description>
+                  </rdf:RDF>
+                </x:xmpmeta>
+                <?xpacket end="w"?>''')
+            doc.set_xml_metadata(xmp)
+
+            return doc.tobytes()
+        except Exception as e:
+            logger.warning(f"Failed to add PDF metadata: {e}")
+            return pdf_bytes
+
+    @staticmethod
+    def create_pdf_from_images_pillow(image_paths: List[str], output_file: str = None, aspect_ratio: str = '16:9') -> Optional[bytes]:
         """
         Create PDF file from image paths using Pillow (original method)
 
@@ -243,6 +506,7 @@ class ExportService:
             PDF file as bytes if output_file is None, otherwise None
         """
         images = []
+        page_w, page_h = _get_page_size_inches(aspect_ratio)
 
         # Load all images
         for image_path in image_paths:
@@ -255,6 +519,9 @@ class ExportService:
             # Convert to RGB if necessary (PDF requires RGB)
             if img.mode != 'RGB':
                 img = img.convert('RGB')
+
+            # Set DPI so PDF page matches target dimensions
+            img.info['dpi'] = (img.width / page_w, img.height / page_h)
 
             images.append(img)
 
@@ -280,7 +547,7 @@ class ExportService:
                 format='PDF'
             )
             pdf_bytes.seek(0)
-            return pdf_bytes.getvalue()
+            return ExportService._add_pdf_metadata(pdf_bytes.getvalue())
        
     @staticmethod
     def _add_mineru_text_to_slide(builder, slide, text_item: Dict[str, Any], scale_x: float = 1.0, scale_y: float = 1.0):
@@ -755,7 +1022,8 @@ class ExportService:
     def _batch_extract_text_styles_hybrid(
         editable_images: List,  # List[EditableImage]
         text_attribute_extractor,
-        max_workers: int = 8
+        max_workers: int = 8,
+        fail_fast: bool = False
     ) -> Tuple[Dict[str, Any], List[Tuple[str, str]]]:
         """
         【混合策略】结合全局识别和单个裁剪识别的优势
@@ -831,10 +1099,10 @@ class ExportService:
                     full_image=page_data['image_path'],
                     text_elements=page_data['elements']
                 )
-                return page_idx, results
+                return page_idx, results, None
             except Exception as e:
                 logger.warning(f"全局识别页面 {page_idx + 1} 失败: {e}")
-                return page_idx, {}
+                return page_idx, {}, str(e)
         
         # 收集失败信息
         failed_extractions = []  # [(element_id, reason), ...]
@@ -847,13 +1115,30 @@ class ExportService:
                     image=image_path,
                     text_content=text_content
                 )
-                # 只要 style 不为 None 就算成功（黑色也是有效颜色）
-                if style:
+                # Check for real success: style must exist and not be an error result
+                # (CaptionModelTextAttributeExtractor returns TextStyleResult(confidence=0.0, metadata={'error':...}) on failure)
+                is_error = style and style.confidence == 0.0 and style.metadata.get('error')
+                if style and not is_error:
                     return element_id, style, None
                 else:
-                    return element_id, None, "样式提取返回空"
+                    error_msg = style.metadata.get('error', '样式提取返回空') if style else "样式提取返回空"
+                    if fail_fast:
+                        raise ExportService._build_style_extraction_error(
+                            error_msg,
+                            element_id=element_id,
+                            text_content=text_content
+                        )
+                    return element_id, None, error_msg
+            except ExportError:
+                raise  # 重新抛出 ExportError
             except Exception as e:
                 logger.warning(f"单个识别失败 [{element_id}]: {e}")
+                if fail_fast:
+                    raise ExportService._build_style_extraction_error(
+                        str(e),
+                        element_id=element_id,
+                        text_content=text_content
+                    )
                 return element_id, None, str(e)
         
         # 并发执行全局识别和单个裁剪识别
@@ -876,10 +1161,37 @@ class ExportService:
             for future in as_completed(global_futures):
                 task_type, page_idx = global_futures[future]
                 try:
-                    _, page_results = future.result()
+                    _, page_results, page_error = future.result()
                     global_results.update(page_results)
+                    expected_element_ids = {
+                        element['element_id'] for element in page_text_elements[page_idx]['elements']
+                    }
+                    missing_element_ids = expected_element_ids - set(page_results.keys())
+                    if page_error:
+                        if fail_fast:
+                            raise ExportService._build_style_extraction_error(page_error, page_idx=page_idx)
+                        failed_extractions.extend(
+                            (element_id, f"全局识别失败: {page_error}")
+                            for element_id in expected_element_ids
+                        )
+                    elif missing_element_ids:
+                        reason = "全局识别未返回完整结果"
+                        if fail_fast:
+                            raise ExportService._build_style_extraction_error(reason, page_idx=page_idx)
+                        failed_extractions.extend((element_id, reason) for element_id in missing_element_ids)
                 except Exception as e:
                     logger.error(f"全局识别任务失败: {e}")
+                    if fail_fast:
+                        if isinstance(e, ExportError):
+                            raise
+                        raise ExportService._build_style_extraction_error(str(e), page_idx=page_idx) from e
+                    expected_element_ids = [
+                        element['element_id'] for element in page_text_elements[page_idx]['elements']
+                    ]
+                    failed_extractions.extend(
+                        (element_id, f"全局识别失败: {e}")
+                        for element_id in expected_element_ids
+                    )
             
             # 收集单个裁剪识别结果
             for future in as_completed(local_futures):
@@ -892,6 +1204,8 @@ class ExportService:
                         failed_extractions.append((elem_id, error))
                 except Exception as e:
                     logger.error(f"单个识别任务失败: {e}")
+                    if fail_fast:
+                        raise
                     failed_extractions.append((element_id, str(e)))
         
         # Step 3: 合并结果
@@ -943,7 +1257,9 @@ class ExportService:
         text_attribute_extractor = None,  # 可选：文字属性提取器，用于提取颜色、粗体、斜体等样式
         progress_callback = None,  # 可选：进度回调函数 (step, message, percent) -> None
         export_extractor_method: str = 'hybrid',  # 组件提取方法: mineru, hybrid
-        export_inpaint_method: str = 'hybrid'  # 背景修复方法: generative, baidu, hybrid
+        export_inpaint_method: str = 'hybrid',  # 背景修复方法: generative, baidu, hybrid
+        enable_icon_subject_extraction: bool = False,  # 是否对小尺寸图标走百度智能抠图
+        fail_fast: bool = True  # 是否在遇到错误时立即停止（False则收集警告继续）
     ) -> Tuple[Optional[bytes], ExportWarnings]:
         """
         使用递归图片可编辑化服务创建可编辑PPTX
@@ -968,7 +1284,8 @@ class ExportService:
                 可通过 TextAttributeExtractorFactory.create_caption_model_extractor() 创建
             export_extractor_method: 组件提取方法 ('mineru' 或 'hybrid'，默认 'hybrid')
             export_inpaint_method: 背景修复方法 ('generative', 'baidu', 'hybrid'，默认 'hybrid')
-        
+            fail_fast: 是否在遇到错误时立即停止（默认 True）。设为 False 则收集警告继续导出。
+
         Returns:
             (pptx_bytes, warnings): 元组，包含 PPTX 字节流和警告信息
             - pptx_bytes: PPTX 文件字节流（如果 output_file 为 None），否则为 None
@@ -1002,11 +1319,16 @@ class ExportService:
             report_progress("开始", f"准备分析 {total_pages} 页幻灯片...", 0)
             
             # 1. 创建ImageEditabilityService（配置自动从 Flask config 获取，使用项目导出设置）
-            logger.info(f"使用导出设置: extractor={export_extractor_method}, inpaint={export_inpaint_method}")
+            logger.info(
+                f"使用导出设置: extractor={export_extractor_method}, "
+                f"inpaint={export_inpaint_method}, "
+                f"icon_subject_extraction={enable_icon_subject_extraction}"
+            )
             config = ServiceConfig.from_defaults(
                 max_depth=max_depth,
                 extractor_method=export_extractor_method,
-                inpaint_method=export_inpaint_method
+                inpaint_method=export_inpaint_method,
+                enable_icon_subject_extraction=enable_icon_subject_extraction,
             )
             editability_service = ImageEditabilityService(config)
             
@@ -1054,7 +1376,8 @@ class ExportService:
                 text_styles_cache, failed_extractions = ExportService._batch_extract_text_styles_hybrid(
                     editable_images=editable_images,
                     text_attribute_extractor=text_attribute_extractor,
-                    max_workers=max_workers * 2
+                    max_workers=max_workers * 2,
+                    fail_fast=fail_fast
                 )
                 
                 # 记录样式提取失败的元素（详细）
@@ -1130,7 +1453,8 @@ class ExportService:
                 scale_y=scale_y,
                 depth=0,
                 text_styles_cache=text_styles_cache,  # 使用预提取的样式缓存
-                warnings=warnings  # 收集警告
+                warnings=warnings,  # 收集警告
+                fail_fast=fail_fast  # 传递 fail_fast 参数
             )
             
             logger.info(f"    ✓ 第 {page_idx + 1} 页完成，添加了 {len(editable_img.elements)} 个元素")
@@ -1167,7 +1491,8 @@ class ExportService:
         scale_y: float = 1.0,
         depth: int = 0,
         text_styles_cache: Dict[str, Any] = None,  # 预提取的文本样式缓存，key为element_id
-        warnings: 'ExportWarnings' = None  # 警告收集器
+        warnings: 'ExportWarnings' = None,  # 警告收集器
+        fail_fast: bool = False  # 是否在遇到错误时立即停止
     ):
         """
         递归地将EditableElement添加到幻灯片
@@ -1186,6 +1511,71 @@ class ExportService:
         """
         if text_styles_cache is None:
             text_styles_cache = {}
+
+        def choose_formula_text(text: str, text_style: Any = None) -> Optional[str]:
+            candidates = [text]
+            if text_style and getattr(text_style, 'colored_segments', None):
+                styled_text = ''.join(seg.text for seg in text_style.colored_segments).strip()
+                if styled_text and styled_text not in candidates:
+                    candidates.append(styled_text)
+
+            def score(candidate: str) -> int:
+                if not looks_like_latex_math(candidate):
+                    return -1
+                return (
+                    len(re.findall(r"\\[A-Za-z]+", candidate)) * 10
+                    + candidate.count("\\") * 4
+                    + len(re.findall(r"[_^]\s*(?:\{[^{}]+\}|[A-Za-z0-9+\-=()*])", candidate)) * 3
+                    + len(re.findall(r"[∀∃∈∉≤≥≠≈∑∏∫∞∂∇πΠΣ√]", candidate)) * 2
+                    - len(re.findall(r"\b[A-Za-z]{5,}\b", candidate)) * 2
+                )
+
+            scored = [(score(candidate), candidate) for candidate in candidates if candidate]
+            scored = [item for item in scored if item[0] >= 0]
+            if not scored:
+                return None
+            return max(scored, key=lambda item: item[0])[1]
+
+        def add_text_or_formula(elem, text, bbox_list, text_level='default', align='left'):
+            text_style = text_styles_cache.get(elem.element_id)
+            if text_style:
+                logger.debug(f"{'  ' * depth}  使用缓存的文字样式: color={text_style.font_color_rgb}, bold={text_style.is_bold}")
+
+            formula_text = choose_formula_text(text, text_style)
+            if formula_text:
+                if builder.add_math_element(
+                    slide=slide,
+                    latex=formula_text,
+                    bbox=bbox_list,
+                    text_style=text_style
+                ):
+                    return
+
+                fallback_text = latex_to_display_text(formula_text)
+                builder.add_text_element(
+                    slide=slide,
+                    text=fallback_text,
+                    bbox=bbox_list,
+                    text_level=text_level,
+                    align=align,
+                    text_style=text_style,
+                    allow_math_conversion=False
+                )
+                if warnings:
+                    warnings.add_text_render_failed(
+                        formula_text,
+                        '公式暂不支持原生转换，已使用可读文本回退'
+                    )
+                return
+
+            builder.add_text_element(
+                slide=slide,
+                text=text,
+                bbox=bbox_list,
+                text_level=text_level,
+                align=align,
+                text_style=text_style
+            )
         
         for elem in elements:
             elem_type = elem.element_type
@@ -1207,9 +1597,9 @@ class ExportService:
             ]
             
             logger.info(f"{'  ' * depth}  添加元素: type={elem_type}, bbox={bbox_list}, content={elem.content[:30] if elem.content else None}, image_path={elem.image_path}, 使用{'全局' if depth > 0 else '局部'}坐标")
-            
+
             # 根据类型添加元素（参考原实现的_add_mineru_text_to_slide和_add_mineru_image_to_slide）
-            if elem_type in ['text', 'title', 'list', 'paragraph', 'header', 'footer', 'heading', 'table_caption', 'image_caption']:
+            if elem_type in ['text', 'title', 'list', 'paragraph', 'header', 'footer', 'heading', 'table_caption', 'image_caption', 'equation', 'interline_equation', 'inline_equation']:
                 # 添加文本（参考_add_mineru_text_to_slide）
                 if elem.content:
                     text = elem.content.strip()
@@ -1217,21 +1607,16 @@ class ExportService:
                         try:
                             # 确定文本级别
                             level = 'title' if elem_type in ['title', 'heading'] else 'default'
-                            
-                            # 从缓存获取预提取的文字样式
-                            text_style = text_styles_cache.get(elem.element_id)
-                            if text_style:
-                                logger.debug(f"{'  ' * depth}  使用缓存的文字样式: color={text_style.font_color_rgb}, bold={text_style.is_bold}")
-                            
-                            builder.add_text_element(
-                                slide=slide,
-                                text=text,
-                                bbox=bbox_list,
-                                text_level=level,
-                                text_style=text_style
-                            )
+
+                            add_text_or_formula(elem, text, bbox_list, text_level=level)
                         except Exception as e:
                             logger.warning(f"添加文本元素失败: {e}")
+                            if fail_fast:
+                                raise ExportError(
+                                    message=f"添加文本元素失败: {str(e)}",
+                                    error_type='text_render',
+                                    details={'text': text[:50], 'bbox': bbox_list}
+                                )
                             if warnings:
                                 warnings.add_text_render_failed(text, str(e))
             
@@ -1241,22 +1626,24 @@ class ExportService:
                     text = elem.content.strip()
                     if text:
                         try:
-                            # 从缓存获取预提取的文字样式
-                            text_style = text_styles_cache.get(elem.element_id)
-                            
                             # 表格单元格已经在上面统一处理了bbox_global和缩放
                             # 直接使用bbox_list即可
-                            builder.add_text_element(
-                                slide=slide,
-                                text=text,
-                                bbox=bbox_list,
+                            add_text_or_formula(
+                                elem,
+                                text,
+                                bbox_list,
                                 text_level=None,
-                                align='center',
-                                text_style=text_style
+                                align='center'
                             )
-                            
+
                         except Exception as e:
                             logger.warning(f"添加单元格失败: {e}")
+                            if fail_fast:
+                                raise ExportError(
+                                    message=f"添加表格单元格失败: {str(e)}",
+                                    error_type='text_render',
+                                    details={'text': text[:50], 'bbox': bbox_list}
+                                )
                             if warnings:
                                 warnings.add_text_render_failed(text, str(e))
             
@@ -1285,7 +1672,8 @@ class ExportService:
                         scale_y=scale_y,
                         depth=depth + 1,
                         text_styles_cache=text_styles_cache,
-                        warnings=warnings
+                        warnings=warnings,
+                        fail_fast=fail_fast
                     )
                 else:
                     # 没有子元素，添加整体表格图片
@@ -1349,7 +1737,8 @@ class ExportService:
                         scale_y=scale_y,
                         depth=depth + 1,
                         text_styles_cache=text_styles_cache,
-                        warnings=warnings
+                        warnings=warnings,
+                        fail_fast=fail_fast
                     )
                 else:
                     # 没有子元素或子元素占比过大，直接添加原图
@@ -1371,4 +1760,3 @@ class ExportService:
                 # 其他类型
                 logger.debug(f"{'  ' * depth}  跳过未知类型: {elem_type}")
     
-
