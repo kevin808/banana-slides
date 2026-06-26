@@ -124,7 +124,7 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
   isSavingRequirements,
   isSavingTemplateStyle,
   exportExtractorMethod = 'hybrid',
-  exportInpaintMethod = 'hybrid',
+  exportInpaintMethod = 'generative',
   exportAllowPartial = false,
   enableIconSubjectExtraction = true,
   onExportExtractorMethodChange,

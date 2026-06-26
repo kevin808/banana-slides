@@ -1599,7 +1599,7 @@ def export_editable_pptx_with_recursive_analysis_task(
     max_depth: int = 2,
     max_workers: int = 4,
     export_extractor_method: str = 'hybrid',
-    export_inpaint_method: str = 'hybrid',
+    export_inpaint_method: str = 'generative',
     enable_icon_subject_extraction: bool = True,
     app=None
 ):

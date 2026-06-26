@@ -471,7 +471,7 @@ export const SlidePreview: React.FC = () => {
     (currentProject?.export_extractor_method as ExportExtractorMethod) || 'hybrid'
   );
   const [exportInpaintMethod, setExportInpaintMethod] = useState<ExportInpaintMethod>(
-    (currentProject?.export_inpaint_method as ExportInpaintMethod) || 'hybrid'
+    (currentProject?.export_inpaint_method as ExportInpaintMethod) || 'generative'
   );
   const [exportAllowPartial, setExportAllowPartial] = useState<boolean>(
     currentProject?.export_allow_partial || false
@@ -595,7 +595,7 @@ export const SlidePreview: React.FC = () => {
         setTemplateStyle(currentProject.template_style || '');
         // 初始化导出设置
         setExportExtractorMethod((currentProject.export_extractor_method as ExportExtractorMethod) || 'hybrid');
-        setExportInpaintMethod((currentProject.export_inpaint_method as ExportInpaintMethod) || 'hybrid');
+        setExportInpaintMethod((currentProject.export_inpaint_method as ExportInpaintMethod) || 'generative');
         setExportAllowPartial(currentProject.export_allow_partial || false);
         setEnableIconSubjectExtraction(currentProject.enable_icon_subject_extraction ?? true);
         setAspectRatio(currentProject.image_aspect_ratio || '16:9');
@@ -613,7 +613,7 @@ export const SlidePreview: React.FC = () => {
         // 非文本输入的设置项，始终从服务器同步
         setAspectRatio(currentProject.image_aspect_ratio || '16:9');
         setExportExtractorMethod((currentProject.export_extractor_method as ExportExtractorMethod) || 'hybrid');
-        setExportInpaintMethod((currentProject.export_inpaint_method as ExportInpaintMethod) || 'hybrid');
+        setExportInpaintMethod((currentProject.export_inpaint_method as ExportInpaintMethod) || 'generative');
         setExportAllowPartial(currentProject.export_allow_partial || false);
         setEnableIconSubjectExtraction(currentProject.enable_icon_subject_extraction ?? true);
       }
