@@ -477,7 +477,7 @@ export const SlidePreview: React.FC = () => {
     currentProject?.export_allow_partial || false
   );
   const [enableIconSubjectExtraction, setEnableIconSubjectExtraction] = useState<boolean>(
-    currentProject?.enable_icon_subject_extraction ?? true
+    currentProject?.enable_icon_subject_extraction ?? false
   );
   const [isSavingExportSettings, setIsSavingExportSettings] = useState(false);
   // 画面比例
@@ -597,7 +597,7 @@ export const SlidePreview: React.FC = () => {
         setExportExtractorMethod((currentProject.export_extractor_method as ExportExtractorMethod) || 'hybrid');
         setExportInpaintMethod((currentProject.export_inpaint_method as ExportInpaintMethod) || 'generative');
         setExportAllowPartial(currentProject.export_allow_partial || false);
-        setEnableIconSubjectExtraction(currentProject.enable_icon_subject_extraction ?? true);
+        setEnableIconSubjectExtraction(currentProject.enable_icon_subject_extraction ?? false);
         setAspectRatio(currentProject.image_aspect_ratio || '16:9');
         lastProjectId.current = currentProject.id || null;
         isEditingRequirements.current = false;
@@ -615,7 +615,7 @@ export const SlidePreview: React.FC = () => {
         setExportExtractorMethod((currentProject.export_extractor_method as ExportExtractorMethod) || 'hybrid');
         setExportInpaintMethod((currentProject.export_inpaint_method as ExportInpaintMethod) || 'generative');
         setExportAllowPartial(currentProject.export_allow_partial || false);
-        setEnableIconSubjectExtraction(currentProject.enable_icon_subject_extraction ?? true);
+        setEnableIconSubjectExtraction(currentProject.enable_icon_subject_extraction ?? false);
       }
       // 如果用户正在编辑，则不更新本地状态
     }
@@ -1773,7 +1773,7 @@ export const SlidePreview: React.FC = () => {
                 <button
                   onClick={() => {
                     setShowExportMenu(false);
-                    setEditablePptxDialogIconTransparent(currentProject?.enable_icon_subject_extraction ?? true);
+                    setEditablePptxDialogIconTransparent(currentProject?.enable_icon_subject_extraction ?? false);
                     setShowEditablePptxDialog(true);
                   }}
                   disabled={!hasAllImages}
@@ -2235,7 +2235,7 @@ export const SlidePreview: React.FC = () => {
               <button
                 onClick={async () => {
                   setShowEditablePptxDialog(false);
-                  if (projectId && (currentProject?.enable_icon_subject_extraction ?? true) !== editablePptxDialogIconTransparent) {
+                  if (projectId && (currentProject?.enable_icon_subject_extraction ?? false) !== editablePptxDialogIconTransparent) {
                     try {
                       await updateProject(projectId, { enable_icon_subject_extraction: editablePptxDialogIconTransparent });
                       await syncProject(projectId);

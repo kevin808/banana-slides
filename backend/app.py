@@ -163,6 +163,19 @@ def create_app():
     with app.app_context():
         # Load settings from database and sync to app.config
         _load_settings_to_config(app)
+        if not app.config.get('TESTING') and os.getenv('TESTING', '').lower() != 'true':
+            from services.task_manager import recover_orphaned_tasks
+
+            recovery_summary = recover_orphaned_tasks(
+                app.config['UPLOAD_FOLDER'],
+                stale_after_seconds=int(os.getenv('ORPHANED_TASK_GRACE_SECONDS', '300')),
+            )
+            if recovery_summary['recovered'] or recovery_summary['failed']:
+                logging.info(
+                    "Recovered orphaned tasks on startup: %s recovered, %s failed",
+                    recovery_summary['recovered'],
+                    recovery_summary['failed'],
+                )
         from services.access_code_service import sync_codes_from_env
 
         synced_count = sync_codes_from_env()

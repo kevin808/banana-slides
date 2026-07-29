@@ -10,7 +10,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
 from typing import Callable, List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from math import gcd
 import time
 from sqlalchemy import func
@@ -182,6 +182,9 @@ image_resource_limiter = ResourceLimiter("image", int(os.getenv('MAX_IMAGE_WORKE
 text_resource_limiter = ResourceLimiter("text", int(os.getenv('MAX_DESCRIPTION_WORKERS', '20')))
 
 
+IN_PROGRESS_TASK_STATUSES = ("PENDING", "RUNNING", "PROCESSING")
+
+
 def sync_resource_limits(description_workers: int, image_workers: int):
     """Apply the latest runtime settings to shared concurrency controls."""
     task_manager.update_max_workers(
@@ -189,6 +192,120 @@ def sync_resource_limits(description_workers: int, image_workers: int):
     )
     image_resource_limiter.update_capacity(image_workers)
     text_resource_limiter.update_capacity(description_workers)
+
+
+def _build_export_download_url(project_id: str, file_path: Path) -> str:
+    return f"/files/{project_id}/exports/{file_path.name}"
+
+
+def _find_recoverable_export_file(upload_folder: str, task: Task) -> Optional[Path]:
+    exports_dir = Path(upload_folder) / task.project_id / "exports"
+    if not exports_dir.exists():
+        return None
+
+    created_at = task.created_at or datetime.utcnow()
+    min_mtime = created_at - timedelta(minutes=5)
+    candidates: list[tuple[datetime, Path]] = []
+
+    for file_path in exports_dir.glob("*.pptx"):
+        try:
+            stat = file_path.stat()
+        except OSError:
+            continue
+
+        modified_at = datetime.utcfromtimestamp(stat.st_mtime)
+        if modified_at >= min_mtime:
+            candidates.append((modified_at, file_path))
+
+    if not candidates:
+        return None
+
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    return candidates[0][1]
+
+
+def recover_orphaned_tasks(upload_folder: str, stale_after_seconds: int = 300) -> dict[str, int]:
+    """Recover or fail stale tasks left behind by a backend restart.
+
+    Background tasks run in-process, so a restart can leave DB rows stuck in
+    PENDING/RUNNING forever. On startup we reconcile them so the frontend does
+    not poll indefinitely.
+    """
+    stale_after_seconds = max(0, int(stale_after_seconds))
+    cutoff = datetime.utcnow() - timedelta(seconds=stale_after_seconds)
+    recovered = 0
+    failed = 0
+
+    stale_tasks = (
+        Task.query
+        .filter(Task.status.in_(IN_PROGRESS_TASK_STATUSES))
+        .filter(Task.completed_at.is_(None))
+        .filter(Task.created_at <= cutoff)
+        .all()
+    )
+
+    for task in stale_tasks:
+        if task_manager.is_task_active(task.id):
+            continue
+
+        progress = task.get_progress() or {}
+        messages = list(progress.get("messages") or [])
+        completed_at = datetime.utcnow()
+
+        recovered_file = None
+        if task.task_type == "EXPORT_EDITABLE_PPTX":
+            recovered_file = _find_recoverable_export_file(upload_folder, task)
+
+        if recovered_file is not None:
+            recovery_note = "[恢复] 后端重启后任务状态未回写，已恢复为完成并关联已生成文件"
+            if recovery_note not in messages:
+                messages.append(recovery_note)
+
+            progress.update({
+                "total": 100,
+                "completed": 100,
+                "failed": 0,
+                "current_step": "✓ 导出完成（任务状态已恢复）",
+                "percent": 100,
+                "messages": messages[-10:],
+                "download_url": _build_export_download_url(task.project_id, recovered_file),
+                "filename": recovered_file.name,
+                "recovered_after_restart": True,
+            })
+            task.status = "COMPLETED"
+            task.completed_at = completed_at
+            task.set_progress(progress)
+            recovered += 1
+            logger.warning(
+                "Recovered orphaned export task %s using existing file %s",
+                task.id,
+                recovered_file,
+            )
+            continue
+
+        failure_note = "[恢复] 后端重启导致后台任务中断，请重新发起任务"
+        if failure_note not in messages:
+            messages.append(failure_note)
+
+        progress.update({
+            "current_step": "任务中断",
+            "messages": messages[-10:],
+            "recovered_after_restart": True,
+        })
+        task.status = "FAILED"
+        task.completed_at = completed_at
+        task.error_message = (
+            "Background task was interrupted by a backend restart before its status "
+            "could be saved. Please retry."
+        )
+        task.set_progress(progress)
+        failed += 1
+        logger.warning("Marked orphaned task %s as FAILED after restart recovery", task.id)
+
+    if recovered or failed:
+        db.session.commit()
+
+    return {"recovered": recovered, "failed": failed}
 
 
 def save_image_with_version(image, project_id: str, page_id: str, file_service,
@@ -1600,7 +1717,7 @@ def export_editable_pptx_with_recursive_analysis_task(
     max_workers: int = 4,
     export_extractor_method: str = 'hybrid',
     export_inpaint_method: str = 'generative',
-    enable_icon_subject_extraction: bool = True,
+    enable_icon_subject_extraction: bool = False,
     app=None
 ):
     """
