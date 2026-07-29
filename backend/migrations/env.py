@@ -25,12 +25,16 @@ target_metadata = db.metadata
 
 
 def get_url() -> str:
-    """Get database URL from Alembic config or environment."""
-    return (
-        config.get_main_option("sqlalchemy.url")
-        or os.getenv("DATABASE_URL")
-        or "sqlite:///instance/database.db"
-    )
+    """Resolve the database URL without treating Alembic's placeholder as real."""
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        return database_url
+
+    configured_url = config.get_main_option("sqlalchemy.url")
+    if configured_url and configured_url != "sqlite:///placeholder.db":
+        return configured_url
+
+    return "sqlite:///instance/database.db"
 
 
 def run_migrations_offline() -> None:
