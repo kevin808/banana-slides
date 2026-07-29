@@ -116,6 +116,24 @@ def test_switch_multi_to_single_with_existing_asset_overwrites_pages(
         assert p.template_selection_source == 'batch_apply'
 
 
+def test_switch_multi_to_single_coerces_non_string_style_text(
+        client, stub_submit_task):
+    from models import Page
+
+    project_id = _make_project(client)
+    page_ids = _make_pages(client, project_id, n=2)
+    client.patch(f'/api/projects/{project_id}/template-mode', json={'mode': 'multi'})
+
+    resp = client.patch(
+        f'/api/projects/{project_id}/template-mode',
+        json={'mode': 'single', 'unified_style_text': 12345},
+    )
+
+    assert resp.status_code == 200
+    pages = Page.query.filter(Page.id.in_(page_ids)).all()
+    assert {p.template_style_text for p in pages} == {'12345'}
+
+
 def test_switch_multi_to_single_requires_unifier(client, stub_submit_task):
     project_id = _make_project(client)
     resp = client.patch(
@@ -208,6 +226,32 @@ def test_patch_page_template_clears_match_metadata_on_manual(client, stub_submit
     assert page.template_selection_source == 'manual'
 
 
+def test_patch_page_template_clears_metadata_when_empty(client, stub_submit_task):
+    from models import db, Page
+    project_id = _make_project(client)
+    asset_id = _upload_asset(client, project_id)
+    page_id = _make_pages(client, project_id, n=1)[0]
+
+    page = Page.query.get(page_id)
+    page.template_asset_id = asset_id
+    page.template_match_reason = 'auto reasoning'
+    page.template_match_confidence = 0.92
+    page.template_selection_source = 'auto'
+    db.session.commit()
+
+    resp = client.patch(
+        f'/api/projects/{project_id}/pages/{page_id}/template',
+        json={'template_asset_id': None, 'template_style_text': None},
+    )
+    assert resp.status_code == 200
+    page = Page.query.get(page_id)
+    assert page.template_asset_id is None
+    assert page.template_style_text is None
+    assert page.template_selection_source is None
+    assert page.template_match_reason is None
+    assert page.template_match_confidence is None
+
+
 def test_auto_match_requires_descriptions(client, stub_submit_task):
     project_id = _make_project(client)
     _make_pages(client, project_id, n=2)
@@ -224,7 +268,7 @@ def test_auto_match_requires_descriptions(client, stub_submit_task):
     assert len(err['missing_page_ids']) == 2
 
 
-def test_auto_match_single_page_requires_completed_asset(client, stub_submit_task):
+def test_auto_match_single_page_waits_for_pending_asset(client, stub_submit_task):
     from models import db, Page
     project_id = _make_project(client)
     page_id = _make_pages(client, project_id, n=1)[0]
@@ -236,5 +280,5 @@ def test_auto_match_single_page_requires_completed_asset(client, stub_submit_tas
     resp = client.post(
         f'/api/projects/{project_id}/pages/{page_id}/template/auto-match'
     )
-    assert resp.status_code == 400
-    assert resp.get_json()['error']['code'] == 'NO_ANALYZED_TEMPLATES'
+    assert resp.status_code == 409
+    assert resp.get_json()['error']['code'] == 'TEMPLATES_ANALYZING'

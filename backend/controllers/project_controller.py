@@ -62,6 +62,30 @@ def _verify_project_access(project, device_id):
     return project.device_id == device_id
 
 
+def _get_required_project_content(data, creation_type):
+    """Return normalized content for the selected creation mode.
+
+    'blank' projects start with no source text at all — the user builds the
+    outline by hand or imports it — so there is nothing to validate.
+    """
+    if creation_type == 'blank':
+        return None, None, None
+    field_name = {
+        'idea': 'idea_prompt',
+        'outline': 'outline_text',
+        'descriptions': 'description_text',
+    }[creation_type]
+    value = data.get(field_name)
+    if value is None:
+        return field_name, None, f"{field_name} is required"
+    if not isinstance(value, str):
+        return field_name, None, f"{field_name} must be a string"
+    content = value.strip()
+    if not content:
+        return field_name, None, f"{field_name} must contain non-whitespace text"
+    return field_name, content, None
+
+
 def _get_project_reference_files_content(project_id: str) -> list:
     """
     Get reference files content for a project
@@ -271,12 +295,20 @@ def create_project():
             return bad_request("creation_type is required")
 
         creation_type = data.get('creation_type')
-
-        if creation_type not in ['idea', 'outline', 'descriptions']:
+        if creation_type not in ['idea', 'outline', 'descriptions', 'blank']:
             return bad_request("Invalid creation_type")
-        # Get device_id from request header
-        device_id = get_device_id()
 
+        _, content, content_error = _get_required_project_content(data, creation_type)
+        if content_error:
+            return bad_request(content_error)
+
+        template_style = data.get('template_style')
+        if template_style is not None:
+            if not isinstance(template_style, str):
+                return bad_request("template_style must be a string")
+            template_style = template_style.strip() or None
+
+        device_id = get_device_id()
         # Validate and set aspect ratio if provided
         image_aspect_ratio = '16:9'
         if 'image_aspect_ratio' in data:
@@ -289,10 +321,10 @@ def create_project():
         project = Project(
             device_id=device_id,
             creation_type=creation_type,
-            idea_prompt=data.get('idea_prompt'),
-            outline_text=data.get('outline_text'),
-            description_text=data.get('description_text'),
-            template_style=data.get('template_style'),
+            idea_prompt=content if creation_type == 'idea' else None,
+            outline_text=content if creation_type == 'outline' else None,
+            description_text=content if creation_type == 'descriptions' else None,
+            template_style=template_style,
             image_aspect_ratio=image_aspect_ratio,
             status='DRAFT'
         )
@@ -1415,9 +1447,11 @@ def refine_descriptions(project_id):
         # Update pages with refined descriptions
         for page, refined_desc in zip(pages, refined_descriptions):
             desc_content = {
-                "text": refined_desc,
+                "text": refined_desc.get('text', ''),
                 "generated_at": datetime.utcnow().isoformat()
             }
+            if refined_desc.get('extra_fields'):
+                desc_content['extra_fields'] = refined_desc['extra_fields']
             page.set_description_content(desc_content)
             page.status = 'DESCRIPTION_GENERATED'
         

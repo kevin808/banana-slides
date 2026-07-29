@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Sparkles, FileText, FileEdit, ImagePlus, Paperclip, Palette, Lightbulb, Search, Settings, FolderOpen, HelpCircle, Sun, Moon, Globe, Monitor, ChevronDown, Upload, RefreshCw } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Sparkles, FileText, FileEdit, ImagePlus, Paperclip, Palette, Lightbulb, Search, Settings, FolderOpen, HelpCircle, Sun, Moon, Globe, Monitor, ChevronDown, Upload, RefreshCw, FilePlus, ArrowRight, X } from 'lucide-react';
 import { Button, Card, useToast, MaterialGeneratorModal, MaterialCenterModal, MaterialSelector, ReferenceFileList, ReferenceFileSelector, FilePreviewModal, HelpModal, Footer, GithubRepoCard, TextStyleSelector } from '@/components/shared';
 import { MarkdownTextarea, type MarkdownTextareaRef } from '@/components/shared/MarkdownTextarea';
 import { TemplateSelector, getTemplateFile } from '@/components/shared/TemplateSelector';
@@ -12,8 +13,10 @@ import { useTheme } from '@/hooks/useTheme';
 import { useImagePaste, buildMaterialsMarkdown } from '@/hooks/useImagePaste';
 import type { Material } from '@/types';
 import { useT } from '@/hooks/useT';
+import logoUrl from '@/assets/logo.png';
 import { ASPECT_RATIO_OPTIONS } from '@/config/aspectRatio';
 import type { ImageQuota } from '@/types';
+import { isDesktop } from '@/utils';
 
 type CreationType = 'idea' | 'outline' | 'description' | 'ppt_renovation';
 
@@ -34,7 +37,7 @@ const homeI18n = {
     home: {
       title: '蕉幻',
       subtitle: 'Vibe your slides like vibe coding',
-      tagline: '基于 nano banana pro🍌 的原生 AI PPT 生成器',
+      tagline: '基于 nano banana pro 的原生 AI PPT 生成器',
       quota: {
         title: '当前免费图片额度',
         used: '已用',
@@ -72,13 +75,15 @@ const homeI18n = {
       template: {
         title: '选择风格模板',
         useTextStyle: '使用文字描述风格',
-        multiMode: '多模板模式',
+        multiMode: '每页独立模板',
         multiModeHint: '每页可使用不同模板，创建后在模板配置页逐页指定',
       },
       actions: {
         selectFile: '选择参考文件',
         parsing: '解析中...',
         createProject: '创建新项目',
+        startBlank: '或从空白项目开始',
+        startBlankHint: '不生成大纲，自己添加或导入页面',
       },
       renovation: {
         uploadHint: '点击或拖拽上传 PDF / PPTX 文件',
@@ -91,7 +96,7 @@ const homeI18n = {
         enterContent: '请输入内容',
         filesParsing: '还有 {{count}} 个参考文件正在解析中，请等待解析完成',
         projectCreateFailed: '项目创建失败',
-        multiModeSwitchFailed: '切换到多模板模式失败，请在项目内重试',
+        multiModeSwitchFailed: '切换到每页独立模板失败，请在项目内重试',
         uploadingImage: '正在上传图片并识别内容...',
         imageUploadSuccess: '图片上传成功！已插入到光标位置',
         imageUploadFailed: '图片上传失败',
@@ -122,7 +127,7 @@ const homeI18n = {
     home: {
       title: 'Banana Slides',
       subtitle: 'Vibe your slides like vibe coding',
-      tagline: 'AI-native PPT generator powered by nano banana pro🍌',
+      tagline: 'AI-native PPT generator powered by nano banana pro',
       quota: {
         title: 'Current Free Image Quota',
         used: 'Used',
@@ -160,13 +165,15 @@ const homeI18n = {
       template: {
         title: 'Select Style Template',
         useTextStyle: 'Use text description for style',
-        multiMode: 'Multi-template mode',
+        multiMode: 'Per-page templates',
         multiModeHint: 'Each page can use a different template; assign them per page on the setup page after creation',
       },
       actions: {
         selectFile: 'Select reference file',
         parsing: 'Parsing...',
         createProject: 'Create New Project',
+        startBlank: 'Or start from a blank project',
+        startBlankHint: 'Skip outline generation — add or import pages yourself',
       },
       renovation: {
         uploadHint: 'Click or drag to upload PDF / PPTX file',
@@ -179,7 +186,7 @@ const homeI18n = {
         enterContent: 'Please enter content',
         filesParsing: '{{count}} reference file(s) are still parsing, please wait',
         projectCreateFailed: 'Failed to create project',
-        multiModeSwitchFailed: 'Failed to switch to multi-template mode; please retry inside the project',
+        multiModeSwitchFailed: 'Failed to switch to per-page templates; please retry inside the project',
         uploadingImage: 'Uploading and recognizing image...',
         imageUploadSuccess: 'Image uploaded! Inserted at cursor position',
         imageUploadFailed: 'Failed to upload image',
@@ -203,7 +210,7 @@ const homeI18n = {
 export const Home: React.FC = () => {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
-  const t = useT(homeI18n); // 组件内翻译 + 自动 fallback 到全局
+  const t = useT(homeI18n);
   const { theme, isDark, setTheme } = useTheme();
   const { initializeProject, isGlobalLoading, switchTemplateMode } = useProjectStore();
   const { show, ToastContainer } = useToast();
@@ -281,6 +288,22 @@ export const Home: React.FC = () => {
 
     loadImageQuota();
   }, []);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const action = searchParams.get('action');
+    if (action === 'material-generate') {
+      setIsMaterialModalOpen(true);
+      const nextSearchParams = new URLSearchParams(searchParams);
+      nextSearchParams.delete('action');
+      setSearchParams(nextSearchParams, { replace: true });
+    } else if (action === 'material-center') {
+      setIsMaterialCenterOpen(true);
+      const nextSearchParams = new URLSearchParams(searchParams);
+      nextSearchParams.delete('action');
+      setSearchParams(nextSearchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const handleOpenMaterialModal = () => {
     // 在主页始终生成全局素材，不关联任何项目
@@ -374,7 +397,7 @@ export const Home: React.FC = () => {
     // 检查是否是PPT文件，提示建议使用PDF
     const fileExt = file.name.split('.').pop()?.toLowerCase();
     if (fileExt === 'ppt' || fileExt === 'pptx') 
-      show({ message: `💡 ${t('home.messages.pptTip')}`, type: 'info' });
+      show({ message: t('home.messages.pptTip'), type: 'info' });
     
     setIsUploadingFile(true);
     try {
@@ -661,7 +684,7 @@ export const Home: React.FC = () => {
         return;
       }
 
-      // 多模板模式：项目默认 single，创建后切到 multi（页级模板在模板配置页指定）
+      // 每页独立模板：项目默认 single，创建后切到 multi（页级模板在模板配置页指定）
       if (multiTemplateMode) {
         try {
           await switchTemplateMode(projectId, { mode: 'multi' });
@@ -720,6 +743,38 @@ export const Home: React.FC = () => {
     }
   };
 
+  // 创建空白项目：不生成大纲，直接进入大纲页手动添加/导入页面
+  const handleCreateBlank = async () => {
+    setIsSubmitting(true);
+    try {
+      const styleDesc = templateStyle.trim() ? templateStyle.trim() : undefined;
+      await initializeProject('blank', '', selectedTemplate || undefined, styleDesc, undefined, aspectRatio);
+
+      const projectId = localStorage.getItem('currentProjectId');
+      if (!projectId) {
+        show({ message: t('home.messages.projectCreateFailed'), type: 'error' });
+        return;
+      }
+
+      if (multiTemplateMode) {
+        try {
+          await switchTemplateMode(projectId, { mode: 'multi' });
+        } catch (error) {
+          console.error('Failed to switch to multi-template mode:', error);
+          show({ message: t('home.messages.multiModeSwitchFailed'), type: 'error' });
+        }
+      }
+
+      navigate(`/project/${projectId}/outline`);
+    } catch (error: any) {
+      console.error('创建空白项目失败:', error);
+      const msg = error?.response?.data?.error?.message || error?.message || t('home.messages.projectCreateFailed');
+      show({ message: msg, type: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50/30 to-pink-50/50 dark:from-background-primary dark:via-background-primary dark:to-background-primary relative overflow-hidden">
       {/* 背景装饰元素 - 仅在亮色模式显示 */}
@@ -729,14 +784,15 @@ export const Home: React.FC = () => {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-yellow-400/5 rounded-full blur-3xl"></div>
       </div>
 
-      {/* 导航栏 */}
+      {/* 导航栏 — web only */}
+      {!isDesktop && (
       <nav className="relative z-50 h-16 md:h-18 bg-white/40 dark:bg-background-primary backdrop-blur-2xl dark:backdrop-blur-none dark:border-b dark:border-border-primary">
 
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-full flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center">
               <img
-                src="/logo.png"
+                src={logoUrl}
                 alt="蕉幻 Banana Slides Logo"
                 className="h-10 md:h-12 w-auto rounded-lg object-contain"
               />
@@ -878,6 +934,7 @@ export const Home: React.FC = () => {
           </div>
         </div>
       </nav>
+      )}
 
       {/* 主内容 */}
       <main className="relative max-w-5xl mx-auto px-3 md:px-4 py-8 md:py-12">
@@ -1013,7 +1070,7 @@ export const Home: React.FC = () => {
                       setRenovationFile(file);
                       const ext = file.name.split('.').pop()?.toLowerCase();
                       if (ext === 'ppt' || ext === 'pptx') {
-                        show({ message: `💡 ${t('home.messages.pptTip')}`, type: 'info' });
+                        show({ message: t('home.messages.pptTip'), type: 'info' });
                       }
                     } else {
                       show({ message: t('home.renovation.onlyPdfPptx'), type: 'error' });
@@ -1032,7 +1089,7 @@ export const Home: React.FC = () => {
                         onClick={(e) => { e.stopPropagation(); setRenovationFile(null); }}
                         className="ml-2 text-gray-400 hover:text-red-500 transition-colors"
                       >
-                        ✕
+                        <X size={16} />
                       </button>
                     </div>
                   ) : (
@@ -1053,7 +1110,7 @@ export const Home: React.FC = () => {
                       setRenovationFile(file);
                       const ext = file.name.split('.').pop()?.toLowerCase();
                       if (ext === 'ppt' || ext === 'pptx') {
-                        show({ message: `💡 ${t('home.messages.pptTip')}`, type: 'info' });
+                        show({ message: t('home.messages.pptTip'), type: 'info' });
                       }
                     }
                     e.target.value = '';
@@ -1161,6 +1218,21 @@ export const Home: React.FC = () => {
             )}
           </div>
 
+          {/* 空白项目入口：跳过 AI 生成，直接进入大纲页手动添加/导入 */}
+          <div className="flex justify-center mb-4">
+            <button
+              type="button"
+              onClick={handleCreateBlank}
+              disabled={isSubmitting || isGlobalLoading}
+              title={t('home.actions.startBlankHint')}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs md:text-sm text-gray-500 dark:text-foreground-tertiary hover:text-banana-600 dark:hover:text-banana hover:bg-banana-50 dark:hover:bg-background-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors touch-manipulation"
+            >
+              <FilePlus size={14} className="flex-shrink-0" />
+              <span>{t('home.actions.startBlank')}</span>
+              <ArrowRight size={14} className="flex-shrink-0" />
+            </button>
+          </div>
+
           {/* 隐藏的文件输入 */}
           <input
             ref={fileInputRef}
@@ -1216,7 +1288,7 @@ export const Home: React.FC = () => {
               </label>
             </div>
             
-            {/* 多模板模式开关 */}
+            {/* 每页独立模板开关 */}
             <label className="flex items-center gap-2 cursor-pointer group mb-3" title={t('home.template.multiModeHint')}>
               <input
                 type="checkbox"

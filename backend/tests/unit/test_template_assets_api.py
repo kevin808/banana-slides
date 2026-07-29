@@ -71,9 +71,61 @@ def test_upload_template_asset_creates_record_and_enqueues_analyze(
     assert any(c['func'] == 'analyze_template_task' for c in stub_submit_task)
 
 
+def test_upload_template_asset_marks_task_failed_when_submit_fails(client, monkeypatch):
+    from models import Task
+    from services import task_manager as tm
+
+    def _fail_submit(*args, **kwargs):
+        raise RuntimeError('queue full')
+
+    monkeypatch.setattr(tm.task_manager, 'submit_task', _fail_submit)
+    project_id = _make_project(client)
+
+    with pytest.raises(RuntimeError, match='queue full'):
+        client.post(
+            f'/api/projects/{project_id}/template-assets',
+            data={'image': (_png_bytes(), 'cover.png')},
+            content_type='multipart/form-data',
+        )
+
+    task = Task.query.filter_by(project_id=project_id, task_type='ANALYZE_TEMPLATE').one()
+    assert task.status == 'FAILED'
+    assert 'Task submission failed: queue full' in task.error_message
+    assert task.completed_at is not None
+
+
+def test_upload_template_pdf_marks_task_failed_when_submit_fails(client, monkeypatch):
+    from models import Task
+    from services import task_manager as tm
+
+    def _fail_submit(*args, **kwargs):
+        raise RuntimeError('executor stopped')
+
+    monkeypatch.setattr(tm.task_manager, 'submit_task', _fail_submit)
+    project_id = _make_project(client)
+
+    with pytest.raises(RuntimeError, match='executor stopped'):
+        client.post(
+            f'/api/projects/{project_id}/template-assets/upload-pdf',
+            data={'pdf': (io.BytesIO(b'%PDF-1.4\n%%EOF\n'), 'template.pdf')},
+            content_type='multipart/form-data',
+        )
+
+    task = Task.query.filter_by(project_id=project_id, task_type='SPLIT_TEMPLATE_PDF').one()
+    assert task.status == 'FAILED'
+    assert 'Task submission failed: executor stopped' in task.error_message
+    assert task.completed_at is not None
+
+
 def test_upload_with_bind_to_page_links_page(client, stub_submit_task):
+    from models import db, Page
+
     project_id = _make_project(client)
     page_id = _make_page(client, project_id)
+    page = Page.query.get(page_id)
+    page.template_match_reason = 'old auto match'
+    page.template_match_confidence = 0.77
+    db.session.commit()
 
     resp = client.post(
         f'/api/projects/{project_id}/template-assets?bind_to_page={page_id}',
@@ -83,10 +135,11 @@ def test_upload_with_bind_to_page_links_page(client, stub_submit_task):
     assert resp.status_code == 201
     asset_id = resp.get_json()['data']['asset']['id']
 
-    from models import Page
     page = Page.query.get(page_id)
     assert page.template_asset_id == asset_id
     assert page.template_selection_source == 'manual'
+    assert page.template_match_reason is None
+    assert page.template_match_confidence is None
 
 
 def test_upload_with_bad_bind_to_page_returns_400(client, stub_submit_task):
@@ -171,7 +224,9 @@ def test_delete_asset_clears_referenced_pages(client, stub_submit_task):
 
     Page.query.filter(Page.id.in_([page1, page2])).update(
         {Page.template_asset_id: asset_id,
-         Page.template_selection_source: 'manual'},
+         Page.template_selection_source: 'manual',
+         Page.template_match_reason: 'stale match',
+         Page.template_match_confidence: 0.83},
         synchronize_session=False,
     )
     db.session.commit()
@@ -189,6 +244,8 @@ def test_delete_asset_clears_referenced_pages(client, stub_submit_task):
     for p in refreshed.values():
         assert p.template_asset_id is None
         assert p.template_selection_source is None
+        assert p.template_match_reason is None
+        assert p.template_match_confidence is None
 
 
 def test_reanalyze_resets_status(client, stub_submit_task):

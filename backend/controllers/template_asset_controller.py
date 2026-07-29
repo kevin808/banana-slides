@@ -66,6 +66,13 @@ def _asset_or_404(project_id: str, asset_id: str):
     return asset, None
 
 
+def _mark_task_submission_failed(task: Task, exc: Exception) -> None:
+    task.status = 'FAILED'
+    task.error_message = f'Task submission failed: {exc}'
+    task.completed_at = datetime.utcnow()
+    db.session.commit()
+
+
 def _enqueue_analyze_template(project_id: str, asset_id: str) -> str:
     """Create a task row + submit the analyze background task.
 
@@ -87,15 +94,19 @@ def _enqueue_analyze_template(project_id: str, asset_id: str) -> str:
     ai_service = AIService()
     file_service = FileService(current_app.config['UPLOAD_FOLDER'])
     app = current_app._get_current_object()
-    task_manager.submit_task(
-        task.id,
-        analyze_template_task,
-        project_id,
-        asset_id,
-        ai_service,
-        file_service,
-        app,
-    )
+    try:
+        task_manager.submit_task(
+            task.id,
+            analyze_template_task,
+            project_id,
+            asset_id,
+            ai_service,
+            file_service,
+            app,
+        )
+    except Exception as exc:
+        _mark_task_submission_failed(task, exc)
+        raise
     return task.id
 
 
@@ -175,6 +186,8 @@ def upload_template_asset(project_id: str):
     if bind_to_page:
         page.template_asset_id = asset_id
         page.template_selection_source = 'manual'
+        page.template_match_reason = None
+        page.template_match_confidence = None
 
     db.session.commit()
 
@@ -227,14 +240,18 @@ def upload_template_pdf(project_id: str):
         process_template_pdf_split_task,
     )
     app = current_app._get_current_object()
-    task_manager.submit_task(
-        task.id,
-        process_template_pdf_split_task,
-        project_id,
-        pdf_relpath,
-        file_service,
-        app,
-    )
+    try:
+        task_manager.submit_task(
+            task.id,
+            process_template_pdf_split_task,
+            project_id,
+            pdf_relpath,
+            file_service,
+            app,
+        )
+    except Exception as exc:
+        _mark_task_submission_failed(task, exc)
+        raise
     return success_response({'task_id': task.id}, status_code=202)
 
 
@@ -381,17 +398,22 @@ def patch_page_template(project_id: str, page_id: str):
         text = data['template_style_text']
         page.template_style_text = (text or None)
 
-    selection_source = data.get('selection_source', 'manual')
-    if selection_source not in VALID_SELECTION_SOURCES:
-        return bad_request(
-            f"selection_source must be one of {sorted(VALID_SELECTION_SOURCES)}"
-        )
-    page.template_selection_source = selection_source
-
-    # Manual selection invalidates auto-match metadata
-    if selection_source == 'manual':
+    if page.template_asset_id is None and page.template_style_text is None:
+        page.template_selection_source = None
         page.template_match_reason = None
         page.template_match_confidence = None
+    else:
+        selection_source = data.get('selection_source', 'manual')
+        if selection_source not in VALID_SELECTION_SOURCES:
+            return bad_request(
+                f"selection_source must be one of {sorted(VALID_SELECTION_SOURCES)}"
+            )
+        page.template_selection_source = selection_source
+
+        # Manual selection invalidates auto-match metadata
+        if selection_source == 'manual':
+            page.template_match_reason = None
+            page.template_match_confidence = None
 
     page.updated_at = datetime.utcnow()
     db.session.commit()
@@ -418,7 +440,10 @@ def patch_template_mode(project_id: str):
     # mode == 'single' — multi → single must specify a unifier (asset / text / both)
     unified_asset_id = data.get('unified_asset_id')
     unified_style_text = data.get('unified_style_text')
-    if unified_asset_id is None and not (unified_style_text or '').strip():
+    if unified_style_text is not None:
+        unified_style_text = str(unified_style_text)
+    unified_style_text = (unified_style_text or '').strip() or None
+    if unified_asset_id is None and not unified_style_text:
         return bad_request(
             'unified_asset_id or unified_style_text is required when switching to single'
         )
@@ -432,7 +457,7 @@ def patch_template_mode(project_id: str):
 
     Page.query.filter_by(project_id=project_id).update({
         Page.template_asset_id: unified_asset_id,
-        Page.template_style_text: unified_style_text or None,
+        Page.template_style_text: unified_style_text,
         Page.template_selection_source: 'batch_apply',
         Page.template_match_reason: None,
         Page.template_match_confidence: None,
@@ -532,17 +557,49 @@ def _enqueue_auto_match(project_id: str, *, page_id: str | None,
 
     ai_service = AIService()
     app = current_app._get_current_object()
-    task_manager.submit_task(
-        task.id,
-        auto_match_templates_task,
-        project_id,
-        page_id,
-        overwrite_existing,
-        preserve_non_empty,
-        ai_service,
-        app,
-    )
+    try:
+        task_manager.submit_task(
+            task.id,
+            auto_match_templates_task,
+            project_id,
+            page_id,
+            overwrite_existing,
+            preserve_non_empty,
+            ai_service,
+            app,
+        )
+    except Exception as exc:
+        _mark_task_submission_failed(task, exc)
+        raise
     return task.id
+
+
+def _auto_match_asset_readiness_error(project_id: str):
+    status_rows = (
+        db.session.query(ProjectTemplateAsset.analysis_status)
+        .filter_by(project_id=project_id)
+        .all()
+    )
+    statuses = [status for (status,) in status_rows]
+    analyzing_count = sum(
+        1 for status in statuses
+        if status in ('pending', 'processing')
+    )
+    if analyzing_count:
+        return error_response(
+            'TEMPLATES_ANALYZING',
+            'Wait for template analysis to finish before auto-match',
+            409,
+            extra={'analyzing_count': analyzing_count},
+        )
+
+    if not any(status == 'completed' for status in statuses):
+        return error_response(
+            'NO_ANALYZED_TEMPLATES',
+            'No template assets have completed analysis yet',
+            400,
+        )
+    return None
 
 
 @template_assets_bp.route(
@@ -558,6 +615,13 @@ def auto_match_project(project_id: str):
     preserve_non_empty = bool(data.get('preserve_non_empty', False))
 
     pages = Page.query.filter_by(project_id=project_id).all()
+    if not pages:
+        return error_response(
+            'NO_PAGES',
+            'Project pages are still being generated; wait before auto-match',
+            400,
+        )
+
     missing = [p.id for p in pages if not p.get_description_content()]
     if missing:
         return error_response(
@@ -566,6 +630,10 @@ def auto_match_project(project_id: str):
             400,
             extra={'missing_page_ids': missing},
         )
+
+    readiness_error = _auto_match_asset_readiness_error(project_id)
+    if readiness_error:
+        return readiness_error
 
     task_id = _enqueue_auto_match(
         project_id,
@@ -593,17 +661,9 @@ def auto_match_page(project_id: str, page_id: str):
             400,
             extra={'missing_page_ids': [page.id]},
         )
-    has_completed = (
-        ProjectTemplateAsset.query
-        .filter_by(project_id=project_id, analysis_status='completed')
-        .first()
-    )
-    if not has_completed:
-        return error_response(
-            'NO_ANALYZED_TEMPLATES',
-            'No template assets have completed analysis yet',
-            400,
-        )
+    readiness_error = _auto_match_asset_readiness_error(project_id)
+    if readiness_error:
+        return readiness_error
 
     task_id = _enqueue_auto_match(
         project_id,

@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient, getBaseURL } from './client';
 import type { Project, Task, ApiResponse, CreateProjectRequest, Page, Material, TemplateAsset } from '@/types';
 import type { Settings, ImageQuota } from '../types/index';
 
@@ -22,12 +22,14 @@ export const verifyAccessCode = async (code: string): Promise<ApiResponse<{ vali
  * 创建项目
  */
 export const createProject = async (data: CreateProjectRequest): Promise<ApiResponse<Project>> => {
-  // 根据输入类型确定 creation_type
-  let creation_type = 'idea';
-  if (data.description_text) {
-    creation_type = 'descriptions';
-  } else if (data.outline_text) {
-    creation_type = 'outline';
+  // 优先使用显式传入的 creation_type（空白项目没有任何文本内容，无法推断）
+  let creation_type: string = data.creation_type ?? 'idea';
+  if (!data.creation_type) {
+    if (data.description_text) {
+      creation_type = 'descriptions';
+    } else if (data.outline_text) {
+      creation_type = 'outline';
+    }
   }
 
   const response = await apiClient.post<ApiResponse<Project>>('/api/projects', {
@@ -157,7 +159,7 @@ export const generateOutlineStream = async (
   const lang = language || await getStoredOutputLanguage();
   const accessCode = localStorage.getItem('banana-access-code');
 
-  const response = await fetch(`/api/projects/${projectId}/generate/outline/stream`, {
+  const response = await fetch(`${getBaseURL()}/api/projects/${projectId}/generate/outline/stream`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -270,7 +272,7 @@ export const generateDescriptionsStream = async (
   const lang = language || await getStoredOutputLanguage();
   const accessCode = localStorage.getItem('banana-access-code');
 
-  const response = await fetch(`/api/projects/${projectId}/generate/descriptions/stream`, {
+  const response = await fetch(`${getBaseURL()}/api/projects/${projectId}/generate/descriptions/stream`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -588,6 +590,17 @@ export const addPage = async (projectId: string, data: Partial<Page>): Promise<A
   return response.data;
 };
 
+/**
+ * 批量添加页面
+ */
+export const addPages = async (projectId: string, pages: Partial<Page>[]): Promise<ApiResponse<Page[]>> => {
+  const response = await apiClient.post<ApiResponse<Page[]>>(
+    `/api/projects/${projectId}/pages/batch`,
+    { pages }
+  );
+  return response.data;
+};
+
 // ===== 任务查询 =====
 
 /**
@@ -677,6 +690,7 @@ const buildExportQuery = (params: Record<string, string | string[] | boolean | u
  * 导出为PPTX
  * @param projectId 项目ID
  * @param pageIds 可选的页面ID列表，如果不提供则导出所有页面
+ * @param clientTaskId 可选的幂等任务ID，用于创建请求响应丢失后的恢复
  */
 export const exportPPTX = async (
   projectId: string,
@@ -736,13 +750,15 @@ export const exportImages = async (
 export const exportEditablePPTX = async (
   projectId: string,
   filename?: string,
-  pageIds?: string[]
+  pageIds?: string[],
+  clientTaskId?: string,
 ): Promise<ApiResponse<{ task_id: string }>> => {
   const response = await apiClient.post<
     ApiResponse<{ task_id: string }>
   >(`/api/projects/${projectId}/export/editable-pptx`, {
     filename,
-    page_ids: pageIds
+    page_ids: pageIds,
+    client_task_id: clientTaskId,
   });
   return response.data;
 };
@@ -760,6 +776,19 @@ export const listExports = async (
   download_url: string;
 }> }>> => {
   const response = await apiClient.get(`/api/projects/${projectId}/exports`);
+  return response.data;
+};
+
+/**
+ * 删除项目已导出的文件
+ */
+export const deleteExport = async (
+  projectId: string,
+  filename: string,
+): Promise<ApiResponse<{ filename: string }>> => {
+  const response = await apiClient.delete(
+    `/api/projects/${projectId}/exports/${encodeURIComponent(filename)}`
+  );
   return response.data;
 };
 

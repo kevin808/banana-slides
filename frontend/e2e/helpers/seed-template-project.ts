@@ -60,7 +60,7 @@ export async function addPage(
 ): Promise<string> {
   const { json } = await api(backend, 'POST', `/api/projects/${projectId}/pages`, {
     order_index: index,
-    outline_content: { title },
+    outline_content: { title, points: [] },
     ...(description ? { description_content: { text: description } } : {}),
   })
   return json.data.page_id
