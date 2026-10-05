@@ -12,6 +12,7 @@ def repair_desktop_settings_schema(db):
             'api_key': 'VARCHAR(500)',
             'image_resolution': 'VARCHAR(20)',
             'image_aspect_ratio': 'VARCHAR(10)',
+            'image_quality': 'VARCHAR(10)',
             'max_description_workers': 'INTEGER',
             'max_image_workers': 'INTEGER',
             'text_model': 'VARCHAR(100)',
@@ -59,7 +60,7 @@ def repair_desktop_settings_schema(db):
             'export_extractor_method': "VARCHAR(50) DEFAULT 'hybrid'",
             'export_inpaint_method': "VARCHAR(50) DEFAULT 'generative'",
             'export_allow_partial': 'BOOLEAN DEFAULT 0',
-            'enable_icon_subject_extraction': 'BOOLEAN DEFAULT 1',
+            'enable_icon_subject_extraction': 'BOOLEAN DEFAULT 0',
             'image_aspect_ratio': "VARCHAR(10) DEFAULT '16:9'",
         },
         'pages': {

@@ -1,7 +1,7 @@
 """add access_codes table
 
 Revision ID: 1f6f2c8c5b11
-Revises: 016_merge_heads, 017_add_elevenlabs_to_settings, 017_icon_subject_ext
+Revises: 016_merge_heads, 017_icon_subject_ext
 Create Date: 2026-03-09 11:00:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '1f6f2c8c5b11'
-down_revision = ('016_merge_heads', '017_add_elevenlabs_to_settings', '017_icon_subject_ext')
+down_revision = ('016_merge_heads', '017_icon_subject_ext')
 branch_labels = None
 depends_on = None
 

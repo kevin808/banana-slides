@@ -11,4 +11,4 @@ def test_alembic_has_single_head():
 
     script = ScriptDirectory.from_config(config)
 
-    assert script.get_heads() == ["022_merge_upstream_quality_control_head"]
+    assert script.get_heads() == ["023_merge_upstream_image_quality_head"]

@@ -4,6 +4,8 @@ import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import pytest
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 BACKEND_ROOT = PROJECT_ROOT / "backend"
@@ -42,7 +44,8 @@ def _create_isolated_app(monkeypatch, tmp_path):
     return flask_app
 
 
-def test_recover_orphaned_editable_export_with_existing_file(monkeypatch, tmp_path):
+@pytest.mark.parametrize('startup', [False, True])
+def test_recover_orphaned_editable_export_with_existing_file(monkeypatch, tmp_path, startup):
     flask_app = _create_isolated_app(monkeypatch, tmp_path)
 
     from models import db, Project, Task
@@ -76,11 +79,16 @@ def test_recover_orphaned_editable_export_with_existing_file(monkeypatch, tmp_pa
         output_file = exports_dir / f"presentation_{project.id}.pptx"
         output_file.write_bytes(b"fake-pptx")
 
-        summary = recover_orphaned_tasks(str(tmp_path), stale_after_seconds=60)
+        if startup:
+            app_module = importlib.import_module('app')
+            monkeypatch.setattr(app_module, 'app', flask_app)
+            app_module._reconcile_orphaned_tasks_on_startup()
+        else:
+            summary = recover_orphaned_tasks(str(tmp_path), stale_after_seconds=60)
+            assert summary == {"recovered": 1, "failed": 0}
         db.session.refresh(task)
         progress = task.get_progress()
 
-        assert summary == {"recovered": 1, "failed": 0}
         assert task.status == "COMPLETED"
         assert task.completed_at is not None
         assert progress["percent"] == 100
