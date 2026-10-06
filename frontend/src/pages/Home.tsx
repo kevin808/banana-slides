@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
-import { Sparkles, FileText, FileEdit, ImagePlus, Paperclip, Palette, Lightbulb, Search, Settings, FolderOpen, HelpCircle, Sun, Moon, Globe, Monitor, ChevronDown, Upload, RefreshCw, FilePlus, ArrowRight, X } from 'lucide-react';
+import { Sparkles, FileText, FileEdit, ImagePlus, Paperclip, Palette, Lightbulb, Search, Settings, FolderOpen, HelpCircle, Sun, Moon, Globe, Monitor, ChevronDown, Upload, RefreshCw, FilePlus, ArrowRight, X, AlertTriangle } from 'lucide-react';
 import { Button, Card, useToast, MaterialGeneratorModal, MaterialCenterModal, MaterialSelector, ReferenceFileList, ReferenceFileSelector, FilePreviewModal, HelpModal, Footer, GithubRepoCard, TextStyleSelector } from '@/components/shared';
 import { MarkdownTextarea, type MarkdownTextareaRef } from '@/components/shared/MarkdownTextarea';
 import { TemplateSelector, getTemplateFile } from '@/components/shared/TemplateSelector';
@@ -39,6 +39,7 @@ const homeI18n = {
       title: '蕉幻',
       subtitle: 'Vibe your slides like vibe coding',
       tagline: '基于 nano banana pro 的原生 AI PPT 生成器',
+      retentionNotice: '只保留最近 90 天的数据，请及时下载保存',
       quota: {
         title: '当前免费图片额度',
         used: '已用',
@@ -129,6 +130,7 @@ const homeI18n = {
       title: 'Banana Slides',
       subtitle: 'Vibe your slides like vibe coding',
       tagline: 'AI-native PPT generator powered by nano banana pro',
+      retentionNotice: 'Only data from the last 90 days is retained. Please download and save your files promptly.',
       quota: {
         title: 'Current Free Image Quota',
         used: 'Used',
@@ -953,6 +955,11 @@ export const Home: React.FC = () => {
 
       {/* 主内容 */}
       <main className="relative max-w-5xl mx-auto px-3 md:px-4 py-8 md:py-12">
+        <p className="mb-6 md:mb-8 flex items-start gap-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
+          <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
+          <span>{t('home.retentionNotice')}</span>
+        </p>
+
         {/* Hero 标题区 */}
         <div className="text-center mb-10 md:mb-16 space-y-4 md:space-y-6">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/60 dark:bg-background-secondary backdrop-blur-sm rounded-full shadow-sm dark:shadow-none mb-4">
