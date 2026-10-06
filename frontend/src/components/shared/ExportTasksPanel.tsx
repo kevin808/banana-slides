@@ -39,6 +39,7 @@ const exportI18n = {
       taskInterruptedHelp: "点任务右侧的 × 移除这条记录，然后重新发起即可。",
       taskStalledHelp: "可以点右侧的 × 移除该任务后重新导出；若反复出现，请把应用日志发给开发者。",
       exportedFiles: "已导出文件",
+      retentionNotice: "只保留最近 90 天的数据，请及时下载保存",
       deleteExportTitle: "删除导出文件",
       deleteExportMessage: "确定要删除「{{filename}}」吗？此操作会移除服务器上的文件。",
       deleteExportConfirm: "删除文件",
@@ -75,6 +76,7 @@ const exportI18n = {
       taskInterruptedHelp: "Remove the entry with the × button, then start the export again.",
       taskStalledHelp: "Remove the task with the × button and export again. If it keeps happening, send the app log to the developer.",
       exportedFiles: "Exported Files",
+      retentionNotice: "Only data from the last 90 days is retained. Please download and save your files promptly.",
       deleteExportTitle: "Delete Exported File",
       deleteExportMessage: "Delete \"{{filename}}\" from the server?",
       deleteExportConfirm: "Delete File",
@@ -639,6 +641,11 @@ export const ExportTasksPanel: React.FC<ExportTasksPanelProps> = ({ projectId, p
           )}
         </div>
       </button>
+
+      <p className="flex items-start gap-2 border-t border-amber-100 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-4 py-2 text-xs text-amber-800 dark:text-amber-200">
+        <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
+        <span>{t('export.retentionNotice')}</span>
+      </p>
       
       {isExpanded && (
         <div className="max-h-96 overflow-y-auto" data-testid="export-tasks-list">

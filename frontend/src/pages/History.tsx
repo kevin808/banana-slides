@@ -22,6 +22,7 @@ const historyI18n = {
     history: {
       title: '历史项目',
       subtitle: '查看和管理你的所有项目',
+      retentionNotice: '只保留最近 90 天的数据，请及时下载保存',
       noProjects: '暂无历史项目',
       createFirst: '创建你的第一个项目开始使用吧',
       selectedCount: '已选择 {{count}} 项',
@@ -50,6 +51,7 @@ const historyI18n = {
     history: {
       title: 'Project History',
       subtitle: 'View and manage all your projects',
+      retentionNotice: 'Only data from the last 90 days is retained. Please download and save your files promptly.',
       noProjects: 'No projects yet',
       createFirst: 'Create your first project to get started',
       selectedCount: '{{count}} selected',
@@ -445,6 +447,11 @@ export const History: React.FC = () => {
             </div>
           )}
         </div>
+
+        <p className="mb-6 flex items-start gap-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
+          <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
+          <span>{t('history.retentionNotice')}</span>
+        </p>
 
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
