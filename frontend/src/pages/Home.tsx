@@ -17,7 +17,7 @@ import { useT } from '@/hooks/useT';
 import logoUrl from '@/assets/logo.png';
 import { ASPECT_RATIO_OPTIONS } from '@/config/aspectRatio';
 import type { ImageQuota } from '@/types';
-import { isDesktop } from '@/utils';
+import { isDesktop, hideGlobalSettings } from '@/utils';
 
 type CreationType = 'idea' | 'outline' | 'description' | 'ppt_renovation';
 
@@ -866,7 +866,7 @@ export const Home: React.FC = () => {
               <span className="hidden sm:inline">{t('nav.history')}</span>
               <span className="sm:hidden">{t('nav.history')}</span>
             </Button>
-            <Button
+            {!hideGlobalSettings && <Button
               variant="ghost"
               size="sm"
               icon={<Settings size={16} className="md:w-[18px] md:h-[18px]" />}
@@ -874,7 +874,7 @@ export const Home: React.FC = () => {
               className="text-xs md:text-sm hover:bg-banana-100/60 hover:shadow-sm hover:scale-105 transition-all duration-200 font-medium"
             >
               <span className="hidden md:inline">{t('nav.settings')}</span>
-            </Button>
+            </Button>}
             <Button
               variant="ghost"
               size="sm"

@@ -2,6 +2,9 @@ import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { Project, Page } from '@/types';
 
+// UI only: deployments must protect settings APIs at the reverse proxy too.
+export const hideGlobalSettings = import.meta.env.VITE_HIDE_SETTINGS === 'true';
+
 /**
  * 合并 className (支持 Tailwind CSS)
  */

@@ -134,7 +134,7 @@ import { Button, Loading, useToast, useConfirm, AiRefineInput, FilePreviewModal,
 import { DescriptionCard } from '@/components/preview/DescriptionCard';
 import { useProjectStore } from '@/store/useProjectStore';
 import { refineDescriptions, getTaskStatus, addPages, updateProject, getSettings, updateSettings } from '@/api/endpoints';
-import { normalizeRenovationErrorMessage } from '@/utils';
+import { normalizeRenovationErrorMessage, hideGlobalSettings } from '@/utils';
 import { exportProjectToMarkdown, parseMarkdownPages } from '@/utils/projectUtils';
 
 // 详细程度图标 — 暂时屏蔽，效果不够理想
@@ -262,7 +262,10 @@ export const DetailEditor: React.FC = () => {
     (async () => {
       try {
         const res = await getSettings();
-        const s = res.data;
+        const localPreferences = hideGlobalSettings
+          ? JSON.parse(sessionStorage.getItem('banana-description-preferences') || '{}')
+          : {};
+        const s = res.data ? { ...res.data, ...localPreferences } : undefined;
         if (!s) return;
         setDetailLevel('default');
         // detail level from sessionStorage (backwards compat, then from DB if we add it later)
@@ -286,6 +289,14 @@ export const DetailEditor: React.FC = () => {
 
   // Debounced save settings to DB
   const saveSettingsDebounced = useCallback((updates: Record<string, unknown>) => {
+    if (hideGlobalSettings) {
+      // Shared deployments keep editor preferences local, without changing API keys or global defaults.
+      const preferences = JSON.parse(sessionStorage.getItem('banana-description-preferences') || '{}');
+      const cached = JSON.parse(sessionStorage.getItem('banana-settings') || '{}');
+      sessionStorage.setItem('banana-description-preferences', JSON.stringify({ ...preferences, ...updates }));
+      sessionStorage.setItem('banana-settings', JSON.stringify({ ...cached, ...updates }));
+      return;
+    }
     if (settingsSaveTimerRef.current) clearTimeout(settingsSaveTimerRef.current);
     settingsSaveTimerRef.current = setTimeout(async () => {
       try {

@@ -329,7 +329,7 @@ import { useExportTasksStore, type ExportTaskType } from '@/store/useExportTasks
 import { getImageUrl } from '@/api/client';
 import { getPageImageVersions, setCurrentImageVersion, updateProject, uploadTemplate, exportPPTX as apiExportPPTX, exportPDF as apiExportPDF, exportImages as apiExportImages, exportEditablePPTX as apiExportEditablePPTX, exportVideo as apiExportVideo, getSettings, getElevenLabsVoices, updateSettings } from '@/api/endpoints';
 import type { ImageVersion, DescriptionContent, ExportExtractorMethod, ExportInpaintMethod, Page, NarrationConfig } from '@/types';
-import { normalizeErrorMessage } from '@/utils';
+import { normalizeErrorMessage, hideGlobalSettings } from '@/utils';
 
 const VIDEO_VOICE_OPTIONS = [
   { group: '中文', voices: [
@@ -2674,13 +2674,13 @@ export const SlidePreview: React.FC = () => {
                     {elevenLabsEnabled && !elevenLabsApiKeyConfigured && (
                       <div className="flex items-center gap-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
                         <span>{t('preview.videoElevenLabsNoKey')}</span>
-                        <button
+                        {!hideGlobalSettings && <button
                           type="button"
                           onClick={() => { setShowVideoExportDialog(false); navigate('/settings', { state: { from: location.pathname } }); }}
                           className="underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-300 shrink-0"
                         >
                           {t('preview.videoElevenLabsGoSettings')}
-                        </button>
+                        </button>}
                       </div>
                     )}
                   </div>
@@ -2832,7 +2832,7 @@ export const SlidePreview: React.FC = () => {
                 : t('preview.batchGenerate', { count: currentProject.pages.length })}
             </Button>
             {/* 桌面端：质量控制是项目级生成设置，与批量生成放在一起；窄屏时在底部控制栏 */}
-            <div className="hidden lg:block">
+            {!hideGlobalSettings && <div className="hidden lg:block">
               <QualityControlToggle
                 enabled={imageQualityControlEnabled}
                 saving={isSavingImageQualityControl}
@@ -2841,7 +2841,7 @@ export const SlidePreview: React.FC = () => {
                 className="w-full justify-between px-0.5"
                 tooltipPlacement="bottom"
               />
-            </div>
+            </div>}
           </div>
           
           {/* 缩略图列表：桌面端垂直，移动端横向滚动 */}
@@ -3328,7 +3328,7 @@ export const SlidePreview: React.FC = () => {
 
                   {/* 操作 */}
                   <div className="flex items-center gap-1.5 md:gap-2 w-full sm:w-auto justify-center">
-                    <QualityControlToggle
+                    {!hideGlobalSettings && <QualityControlToggle
                       enabled={imageQualityControlEnabled}
                       saving={isSavingImageQualityControl}
                       onToggle={handleToggleImageQualityControl}
@@ -3337,7 +3337,7 @@ export const SlidePreview: React.FC = () => {
                       labelClassName="hidden md:inline"
                       tooltipPlacement="top"
                       tooltipTestId="quality-control-tooltip-docked"
-                    />
+                    />}
                     {/* 手机端：multi 模式进入模板配置，single 模式打开更换模板 */}
                     {currentProject?.template_mode === 'multi' ? (
                       <Button

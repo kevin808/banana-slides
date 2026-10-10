@@ -500,6 +500,8 @@ npm install
 
 前端会通过 Vite proxy 自动连接到 `BACKEND_PORT` 指定的后端服务（默认 `http://localhost:5011`）。如需修改，请在项目根目录的 `.env` 中设置 `BACKEND_PORT`。
 
+共享部署可使用 `VITE_HIDE_SETTINGS=true npm run build:web` 隐藏全局设置入口；`/settings` 仍支持直接访问，描述编辑偏好仅保存在当前浏览器会话。此开关只控制界面，必须在 NGINX 等反向代理上保护设置页面及配置写入、重置、测试和 OAuth 接口，并禁止公网绕过代理直连容器端口。普通编辑和导出仍需读取 `/api/settings`、`/api/settings/image-quota` 和 `/api/settings/elevenlabs-voices`。
+
 
 #### 启动后端服务
 > （可选）如果本地已有重要数据，升级前建议先备份数据库：  
