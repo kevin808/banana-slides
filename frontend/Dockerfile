@@ -7,7 +7,7 @@ ARG APP_COMMIT_SHORT_SHA=
 
 # 构建阶段
 # 如果指定了 DOCKER_REGISTRY，使用镜像源；否则使用官方源
-FROM ${DOCKER_REGISTRY:-}node:18-alpine AS builder
+FROM ${DOCKER_REGISTRY:-}node:24.22.1-alpine AS builder
 
 # 重新声明ARG（FROM之后ARG作用域失效，需要重新声明）
 ARG NPM_REGISTRY=
